@@ -5,16 +5,17 @@ Writes three files per entity into dev/data/ (git-ignored, stays on your PC):
   5min_<entity>.csv    5-minute statistics (only kept ~10 days by Home Assistant)
   hour_<entity>.csv    hourly mean/min/max since the sensor started (kept forever)
 
-Also exports input_button presses you use as ground truth, e.g.
-input_button.monstera_gegossen and input_button.monstera_sensor_bewegt.
+With --journal it also writes journal_<date>.csv: every care entry logged in
+Rootwise (button, card, to-do, action) with the soil moisture at that moment.
+That is the ground truth for the watering detection; no helper buttons needed.
+Without sensor arguments, --journal exports every Rootwise plant's soil sensor.
 
 PowerShell:
   $env:HA_URL = "https://<your-host>.ts.net"
   $env:HA_TOKEN = "<long-lived access token>"
-  .venv\\Scripts\\python dev\\tools\\export_history.py sensor.monstera_soil_moisture `
-      --buttons input_button.monstera_gegossen input_button.monstera_sensor_bewegt
+  .venv/Scripts/python dev/tools/export_history.py --journal
 
-Run it once a week: raw data older than ~10 days is purged by Home Assistant.
+Run it now and then: raw data older than ~10 days is purged by Home Assistant.
 """
 
 from __future__ import annotations
@@ -46,12 +47,47 @@ def _write(path: Path, header: list[str], rows: list[list[Any]]) -> None:
     print(f"  {path.name}: {len(rows)} rows")
 
 
-async def export(entities: list[str], buttons: list[str], days: int, out: Path) -> None:
+async def export_journal(ha: HAWebSocket, out: Path, stamp: str) -> list[str]:
+    """Write the Rootwise care journal; return the plants' soil sensors."""
+    plants = (await ha.call("rootwise/plants"))["plants"]
+    rows = []
+    sensors = []
+    for plant in plants:
+        if moisture := plant["measurements"].get("soil_moisture"):
+            sensors.append(moisture["source"])
+        journal = await ha.call("rootwise/journal", plant_id=plant["id"], limit=1000)
+        rows += [
+            [
+                plant["name"],
+                entry["ts"],
+                entry["type"],
+                entry["source"],
+                entry.get("data", {}).get("moisture"),
+                entry.get("note", ""),
+            ]
+            for entry in reversed(journal["entries"])
+        ]
+    print("rootwise journal")
+    _write(
+        out / f"journal_{stamp}.csv",
+        ["plant", "time", "type", "source", "moisture", "note"],
+        rows,
+    )
+    return sensors
+
+
+async def export(
+    entities: list[str], buttons: list[str], days: int, out: Path, journal: bool
+) -> None:
     """Fetch history and statistics and write CSV files."""
     out.mkdir(parents=True, exist_ok=True)
     now = datetime.now(UTC)
     stamp = now.strftime("%Y%m%d")
     async with HAWebSocket() as ha:
+        if journal:
+            # Without explicit sensors, take every Rootwise plant's soil sensor.
+            sensors = await export_journal(ha, out, stamp)
+            entities = entities or sensors
         stats_ids = {
             s["statistic_id"]
             for s in await ha.call("recorder/list_statistic_ids", statistic_type="mean")
@@ -110,12 +146,21 @@ async def export(entities: list[str], buttons: list[str], days: int, out: Path) 
 def main() -> None:
     """Parse arguments and run."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("entities", nargs="+", help="soil moisture sensor entity ids")
+    parser.add_argument(
+        "entities",
+        nargs="*",
+        help="soil moisture sensor entity ids (default with --journal: all plants')",
+    )
     parser.add_argument("--buttons", nargs="*", default=[], help="ground-truth buttons")
     parser.add_argument("--days", type=int, default=10)
     parser.add_argument("--out", type=Path, default=OUT_DEFAULT)
+    parser.add_argument(
+        "--journal", action="store_true", help="also export the Rootwise care journal"
+    )
     args = parser.parse_args()
-    asyncio.run(export(args.entities, args.buttons, args.days, args.out))
+    if not args.entities and not args.journal:
+        parser.error("name sensors or use --journal")
+    asyncio.run(export(args.entities, args.buttons, args.days, args.out, args.journal))
 
 
 if __name__ == "__main__":

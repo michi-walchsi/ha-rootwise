@@ -20,6 +20,10 @@ STORAGE_VERSION = 1
 SAVE_DELAY = 30  # seconds
 
 
+def _ts(entry: dict[str, Any]) -> datetime:
+    return dt_util.parse_datetime(entry["ts"]) or dt_util.utc_from_timestamp(0)
+
+
 class RootwiseStorage:
     """Load, change and save Rootwise data."""
 
@@ -82,22 +86,47 @@ class RootwiseStorage:
         plant_id: str,
         care_type: str,
         source: str,
+        *,
         when: datetime | None = None,
         note: str | None = None,
+        user_id: str | None = None,
+        data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Append a care entry to the journal."""
         entry: dict[str, Any] = {
             "id": ulid_util.ulid_now(),
             "plant_id": plant_id,
-            "ts": (when or dt_util.utcnow()).isoformat(),
+            # Always UTC, so entries sort correctly whatever zone they came in.
+            "ts": dt_util.as_utc(when or dt_util.utcnow()).isoformat(),
             "type": care_type,
             "source": source,
         }
         if note:
             entry["note"] = note
+        if user_id:
+            entry["user_id"] = user_id
+        if data:
+            entry["data"] = data
         self.journal.append(entry)
         self.async_save_journal()
         return entry
+
+    def get_entry(self, entry_id: str) -> dict[str, Any] | None:
+        """Return one journal entry."""
+        return next((e for e in self.journal if e["id"] == entry_id), None)
+
+    def async_delete_entry(self, entry_id: str) -> dict[str, Any] | None:
+        """Remove one journal entry and return it."""
+        if (entry := self.get_entry(entry_id)) is None:
+            return None
+        self.journal.remove(entry)
+        self.async_save_journal()
+        return entry
+
+    def entries(self, plant_id: str, limit: int) -> list[dict[str, Any]]:
+        """Return a plant's newest entries first."""
+        own = [e for e in self.journal if e["plant_id"] == plant_id]
+        return sorted(own, key=_ts, reverse=True)[:limit]
 
     def last_entry(self, plant_id: str, care_type: str) -> dict[str, Any] | None:
         """Return the newest entry of a type for a plant."""
@@ -106,7 +135,7 @@ class RootwiseStorage:
             for e in self.journal
             if e["plant_id"] == plant_id and e["type"] == care_type
         ]
-        return max(matches, key=lambda e: e["ts"]) if matches else None
+        return max(matches, key=_ts) if matches else None
 
     def count_entries(self, plant_id: str) -> int:
         """Return the number of journal entries of a plant."""

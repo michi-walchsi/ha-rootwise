@@ -421,6 +421,9 @@
     },
     "not_loaded": {
       "message": "Rootwise ist nicht geladen."
+    },
+    "when_in_future": {
+      "message": "Dieser Zeitpunkt liegt in der Zukunft. Prüfe Datum und Uhrzeit."
     }
   },
   "issues": {
@@ -463,6 +466,7 @@
         "pruned": "Geschnitten",
         "repotted": "Umgetopft",
         "rotated": "Gedreht",
+        "sensor_moved": "Sensor umgesteckt",
         "watered": "Gegossen"
       }
     },

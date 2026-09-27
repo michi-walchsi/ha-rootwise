@@ -68,8 +68,13 @@ CARE_TYPES: Final = [
     "rotated",
     "pest_check",
     "pruned",
+    "sensor_moved",
     "note",
 ]
+CARE_SENSOR_MOVED: Final = "sensor_moved"
+# Logging a time this far ahead is a typo or a wrong phone clock.
+FUTURE_TOLERANCE: Final = timedelta(minutes=5)
+SIGNAL_UPDATE: Final = f"{DOMAIN}_update"
 
 DEFAULT_SNOOZE: Final = timedelta(days=1)
 DEFAULT_INTERVAL: Final = (7.0, 12.0)  # summer, winter days for unknown species

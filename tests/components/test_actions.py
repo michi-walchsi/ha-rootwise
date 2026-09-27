@@ -136,3 +136,36 @@ async def test_set_vacation_by_automation(
         DOMAIN, "set_vacation", {"enabled": True}, blocking=True
     )
     assert hass.states.get("switch.rootwise_vacation_mode").state == "on"
+
+
+async def test_log_care_in_the_future_is_rejected(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(
+            DOMAIN,
+            "log_care",
+            {
+                "entity_id": "sensor.monstera_status",
+                "care_type": "watered",
+                "when": "2099-01-01 08:00:00",
+            },
+            blocking=True,
+        )
+    assert err.value.translation_key == "when_in_future"
+
+
+async def test_log_care_keeps_moisture_and_user(
+    hass: HomeAssistant, entry: MockConfigEntry, hass_admin_user
+) -> None:
+    await hass.services.async_call(
+        DOMAIN,
+        "log_care",
+        {"entity_id": "sensor.monstera_status", "care_type": "sensor_moved"},
+        blocking=True,
+        context=Context(user_id=hass_admin_user.id),
+    )
+    (logged,) = entry.runtime_data.storage.journal
+    assert logged["type"] == "sensor_moved"
+    assert logged["data"] == {"moisture": 38.0}
+    assert logged["user_id"] == hass_admin_user.id

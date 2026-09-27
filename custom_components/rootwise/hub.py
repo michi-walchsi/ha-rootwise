@@ -17,6 +17,7 @@ from homeassistant.core import (
     HomeAssistant,
     callback,
 )
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_track_state_change_event,
@@ -29,9 +30,11 @@ from .const import (
     CARE_WATERED,
     DEFAULT_INTERVAL,
     DEFAULT_SNOOZE,
+    FUTURE_TOLERANCE,
     HUB_ENTITY_KEYS,
     MEASUREMENTS,
     PLANT_ENTITY_KEYS,
+    SIGNAL_UPDATE,
     SUBENTRY_PLANT,
 )
 from .engine.interval import seasonal_interval
@@ -99,6 +102,10 @@ def species_range(
         if key == "air_humidity":
             return Range(species.humidity_min, None), "offline"
     return None, None
+
+
+class FutureTimeError(ValueError):
+    """A care entry was logged for a time in the future."""
 
 
 class PlantRuntime:
@@ -350,15 +357,41 @@ class PlantRuntime:
         source: str,
         when: datetime | None = None,
         note: str | None = None,
-    ) -> None:
-        """Log a care action; watering also ends a snooze."""
-        self.hub.storage.async_add_entry(
-            self.config.plant_id, care_type, source, when, note
+        user_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Log a care action; watering also ends a snooze.
+
+        The soil moisture at logging time is kept with the entry: it labels
+        real data for the watering detection later on.
+        """
+        if when is not None:
+            when = dt_util.as_utc(when)  # a naive time means local time
+            if when > dt_util.utcnow() + FUTURE_TOLERANCE:
+                raise FutureTimeError(when)
+        data: dict[str, Any] = {}
+        reading = self.measurements.get("soil_moisture")
+        if reading is not None and reading.value is not None:
+            data["moisture"] = reading.value
+        entry = self.hub.storage.async_add_entry(
+            self.config.plant_id,
+            care_type,
+            source,
+            when=when,
+            note=note,
+            user_id=user_id,
+            data=data,
         )
         if care_type == CARE_WATERED and self._settings.get("snoozed_until"):
             self._settings["snoozed_until"] = None
             self.hub.storage.async_save_data()
             self._arm_snooze_timer()
+        self.async_evaluate()
+        return entry
+
+    @callback
+    def async_delete_entry(self, entry_id: str) -> None:
+        """Remove a journal entry of this plant (for example a wrong tap)."""
+        self.hub.storage.async_delete_entry(entry_id)
         self.async_evaluate()
 
     @callback
@@ -473,6 +506,8 @@ class RootwiseHub:
             return
         for update in list(self._listeners):
             update()
+        # Card subscriptions outlive a reload, so they listen hass-wide.
+        async_dispatcher_send(self.hass, SIGNAL_UPDATE, self)
 
     # ---- global state ---------------------------------------------------
 

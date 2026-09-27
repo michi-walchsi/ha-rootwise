@@ -20,6 +20,7 @@ from homeassistant.helpers.target import (
 import voluptuous as vol
 
 from .const import CARE_TYPES, DOMAIN
+from .hub import FutureTimeError
 
 if TYPE_CHECKING:
     from .hub import PlantRuntime, RootwiseHub
@@ -92,12 +93,18 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
     async def log_care(call: ServiceCall) -> None:
         for plant in _plants(hass, call):
-            plant.async_log_care(
-                call.data["care_type"],
-                source="service",
-                when=call.data.get("when"),
-                note=call.data.get("note"),
-            )
+            try:
+                plant.async_log_care(
+                    call.data["care_type"],
+                    source="service",
+                    when=call.data.get("when"),
+                    note=call.data.get("note"),
+                    user_id=call.context.user_id,
+                )
+            except FutureTimeError as err:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN, translation_key="when_in_future"
+                ) from err
 
     async def snooze(call: ServiceCall) -> None:
         for plant in _plants(hass, call):

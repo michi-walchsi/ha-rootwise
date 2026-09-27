@@ -49,7 +49,8 @@ class CareButton(_PlantButton):
 
     async def async_press(self) -> None:
         """Log the care action."""
-        self._runtime.async_log_care(self._care_type, source="button")
+        user_id = self._context.user_id if self._context else None
+        self._runtime.async_log_care(self._care_type, source="button", user_id=user_id)
 
 
 class SnoozeButton(_PlantButton):

@@ -18,6 +18,7 @@ from .hub import RootwiseHub
 from .repairs import async_check_sources
 from .services import async_setup_services
 from .store import RootwiseStorage
+from .websocket import async_setup_websocket
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -34,8 +35,9 @@ type RootwiseConfigEntry = ConfigEntry[RootwiseHub]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the actions."""
+    """Register the actions and the card API."""
     async_setup_services(hass)
+    async_setup_websocket(hass)
     return True
 
 

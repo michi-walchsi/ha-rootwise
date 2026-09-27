@@ -17,6 +17,7 @@ log_care:
             - rotated
             - pest_check
             - pruned
+            - sensor_moved
             - note
     note:
       selector:
