@@ -65,15 +65,18 @@ def _entity_ids(hass: HomeAssistant, hub: RootwiseHub, plant_id: str) -> dict[st
 
 def _device(
     hass: HomeAssistant, hub: RootwiseHub, plant_id: str
-) -> tuple[str | None, str | None]:
-    """Return the plant device's id and its area name."""
+) -> dict[str, str | None]:
+    """Return the plant device's id and its area."""
     device = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, plant_id), hub.entry.entry_id
     )
-    if device is None:
-        return None, None
-    area = ar.async_get(hass).async_get_area(device.area_id) if device.area_id else None
-    return device.id, area.name if area else None
+    area_id = device.area_id if device else None
+    area = ar.async_get(hass).async_get_area(area_id) if area_id else None
+    return {
+        "device_id": device.id if device else None,
+        "area_id": area_id,
+        "area": area.name if area else None,
+    }
 
 
 def _species(hass: HomeAssistant, plant: PlantRuntime) -> dict[str, Any]:
@@ -118,12 +121,10 @@ def _plant(
     reasons = (*state.reasons, *plant.hints) if state else ()
     snoozed = plant.snoozed_until
     watered = plant.last_watered
-    device_id, area = _device(hass, hub, plant_id)
     return {
         "id": plant_id,
         "name": plant.config.name,
-        "device_id": device_id,
-        "area": area,
+        **_device(hass, hub, plant_id),
         "entity_ids": _entity_ids(hass, hub, plant_id),
         "status": state.status.value if state else None,
         "moisture_level": state.moisture_level.value

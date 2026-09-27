@@ -5,6 +5,7 @@ export function plant(overrides: Partial<Plant> = {}): Plant {
     id: "p1",
     name: "Monstera",
     device_id: "d1",
+    area_id: "wohnzimmer",
     area: "Wohnzimmer",
     entity_ids: { status: "sensor.monstera_status" },
     status: "ok",

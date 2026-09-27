@@ -46,6 +46,7 @@ export interface Plant {
   id: string;
   name: string;
   device_id: string | null;
+  area_id: string | null;
   area: string | null;
   entity_ids: Record<string, string>;
   status: Status | null;

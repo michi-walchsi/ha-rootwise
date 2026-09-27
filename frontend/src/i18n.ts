@@ -81,6 +81,19 @@ const en: Strings = {
   "toast.undone": "Undone",
   "more.other_time": "Watered at another time…",
   "editor.device_id": "Plant",
+  "overview.due.one": "1 needs water today",
+  "overview.due.other": "{count} need water today",
+  "overview.hints.one": "1 hint",
+  "overview.hints.other": "{count} hints",
+  "overview.logged_at": "logged at {time}",
+  "overview.all_logged": "{count} × watered logged",
+  "overview.undo_row": "{name}: take back the entry",
+  "overview.log_row": "Log {name} as watered",
+  "tile.low": "{measure} low",
+  "tile.high": "{measure} high",
+  "tile.never": "never watered",
+  "editor.area_id": "Room",
+  "editor.show_tiles": "All plants as tiles",
   "editor.plant": "Plant",
   "editor.title": "Title",
   "editor.show_history": "Show history",
@@ -166,6 +179,19 @@ const de: Strings = {
   "toast.undone": "Rückgängig gemacht",
   "more.other_time": "Zu anderer Zeit gegossen…",
   "editor.device_id": "Pflanze",
+  "overview.due.one": "1 braucht heute Wasser",
+  "overview.due.other": "{count} brauchen heute Wasser",
+  "overview.hints.one": "1 Hinweis",
+  "overview.hints.other": "{count} Hinweise",
+  "overview.logged_at": "eingetragen um {time}",
+  "overview.all_logged": "{count} × Gegossen eingetragen",
+  "overview.undo_row": "{name}: Eintrag zurücknehmen",
+  "overview.log_row": "{name} als gegossen eintragen",
+  "tile.low": "{measure} zu niedrig",
+  "tile.high": "{measure} zu hoch",
+  "tile.never": "noch nie gegossen",
+  "editor.area_id": "Raum",
+  "editor.show_tiles": "Alle Pflanzen als Kacheln",
   "editor.plant": "Pflanze",
   "editor.title": "Titel",
   "editor.show_history": "Verlauf zeigen",
@@ -188,6 +214,12 @@ export function localize(
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in vars ? formatVar(vars[name], lang) : match,
   );
+}
+
+/** Pick "<key>.one" or "<key>.other" by the language's plural rules. */
+export function plural(hass: HomeAssistant | undefined, key: string, count: number): string {
+  const form = new Intl.PluralRules(language(hass)).select(count) === "one" ? "one" : "other";
+  return localize(hass, `${key}.${form}`, { count });
 }
 
 function formatVar(value: unknown, lang: string): string {

@@ -82,6 +82,7 @@ async def test_plants(hass: HomeAssistant, entry: MockConfigEntry, client) -> No
         (DOMAIN, monstera["id"]), entry.entry_id
     )
     assert monstera["device_id"] == device.id
+    assert monstera["area_id"] is None
     assert monstera["entity_ids"]["watered"] == "button.monstera_watered"
     assert monstera["species"]["scientific"] == "Monstera deliciosa"
     moisture = monstera["measurements"]["soil_moisture"]

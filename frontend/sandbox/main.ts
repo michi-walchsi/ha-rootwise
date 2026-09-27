@@ -53,6 +53,7 @@ const plants: Plant[] = [
     id: "p-calathea",
     name: "Calathea",
     device_id: "d-calathea",
+    area_id: "schlafzimmer",
     area: "Schlafzimmer",
     entity_ids: { status: "sensor.calathea_status", snooze: "button.calathea_snooze" },
     status: "thirsty",
@@ -82,6 +83,7 @@ const plants: Plant[] = [
     id: "p-efeu",
     name: "Efeutute",
     device_id: "d-efeu",
+    area_id: "kueche",
     area: "Küche",
     entity_ids: { status: "sensor.efeutute_status" },
     status: "ok",
@@ -103,6 +105,7 @@ const plants: Plant[] = [
     id: "p-monstera",
     name: "Monstera",
     device_id: "d-monstera",
+    area_id: "wohnzimmer",
     area: "Wohnzimmer",
     entity_ids: { status: "sensor.monstera_status", snooze: "button.monstera_snooze" },
     status: "ok",
@@ -128,6 +131,43 @@ const plants: Plant[] = [
       entry("p-monstera", "watered", 18, "card", 31),
       entry("p-monstera", "fertilized", 24 * 12, "card", 45),
     ],
+  },
+  {
+    id: "p-ficus",
+    name: "Geigenfeige",
+    device_id: "d-ficus",
+    area_id: "wohnzimmer",
+    area: "Wohnzimmer",
+    entity_ids: { status: "sensor.geigenfeige_status" },
+    status: "ok",
+    moisture_level: "ok",
+    needs_water: false,
+    reasons: [{ code: "illuminance_low", value: 120, min: 800 }],
+    snoozed_until: null,
+    last_watered: iso(24 * 4),
+    species: { scientific: "Ficus lyrata", common: "Geigenfeige", image_url: null, source: "offline" },
+    measurements: {
+      soil_moisture: m(44, "%", 25, 65, "ok", "ok"),
+      illuminance: m(120, "lx", 800, 20000, "low"),
+    },
+    recent: [],
+  },
+  {
+    id: "p-zz",
+    name: "Zamioculcas",
+    device_id: "d-zz",
+    area_id: "kueche",
+    area: "Küche",
+    entity_ids: { status: "sensor.zamioculcas_status" },
+    status: "thirsty",
+    moisture_level: null,
+    needs_water: true,
+    reasons: [{ code: "interval_due", days: 21 }],
+    snoozed_until: null,
+    last_watered: iso(24 * 22),
+    species: { scientific: "Zamioculcas zamiifolia", common: "Glücksfeder", image_url: null, source: "offline" },
+    measurements: {},
+    recent: [],
   },
 ];
 
@@ -161,6 +201,8 @@ function entry(
 }
 
 // ---- fake connection ----------------------------------------------------------
+
+const initial = structuredClone(plants);
 
 const listeners = new Set<(p: PlantsPayload) => void>();
 const payload = (): PlantsPayload => ({
@@ -201,6 +243,8 @@ async function callWS<T>(message: Record<string, unknown>): Promise<T> {
       .slice(0, 5);
     if (logged.type === "watered") {
       plant.last_watered = plant.recent.find((e) => e.type === "watered")?.ts ?? ts;
+      plant.needs_water = false;
+      plant.status = "ok";
     }
     push();
     return { entry: logged } as T;
@@ -208,7 +252,14 @@ async function callWS<T>(message: Record<string, unknown>): Promise<T> {
   if (message.type === "rootwise/care/delete") {
     for (const p of plants) {
       p.recent = p.recent.filter((e) => e.id !== message.entry_id);
-      p.last_watered = p.recent.find((e) => e.type === "watered")?.ts ?? null;
+      // Like the real backend re-evaluating: back to the state before watering.
+      const before = initial.find((i) => i.id === p.id);
+      p.last_watered =
+        p.recent.find((e) => e.type === "watered")?.ts ?? before?.last_watered ?? null;
+      if (before && p.last_watered === before.last_watered) {
+        p.status = before.status;
+        p.needs_water = before.needs_water;
+      }
     }
     push();
   }
@@ -232,7 +283,11 @@ for (const [id, dark] of [
   ["dark", true],
 ] as const) {
   const frame = document.getElementById(id);
-  for (const plant of ["d-monstera", "d-calathea", "d-efeu"]) {
+  const overview = document.createElement("rootwise-overview-card");
+  overview.setConfig({ type: "custom:rootwise-overview-card" });
+  overview.hass = hass(dark);
+  frame?.append(overview);
+  for (const plant of ["d-monstera", "d-calathea"]) {
     const card = document.createElement("rootwise-plant-card");
     card.setConfig({ type: "custom:rootwise-plant-card", device_id: plant, show_history: plant === "d-monstera" });
     card.hass = hass(dark);

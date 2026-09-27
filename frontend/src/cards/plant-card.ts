@@ -1,8 +1,9 @@
-import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { canDelete, deleteCare, logCare, snooze, subscribePlants } from "../api";
+import { css, html, nothing, type TemplateResult } from "lit";
+import { customElement, state } from "lit/decorators.js";
+import { canDelete, deleteCare, logCare, snooze } from "../api";
 import { formatNumber, relativeTime, scale, shortDateTime } from "../format";
-import { language, localize } from "../i18n";
+import { language } from "../i18n";
+import { RootwiseCardBase, editorLabel, errorText } from "./base";
 import {
   MEASUREMENT_ORDER,
   detail,
@@ -16,14 +17,12 @@ import {
 } from "../plant-view";
 import { ICONS, STATUS_COLOR, theme } from "../theme";
 import type {
-  HassConnection,
   HomeAssistant,
   JournalEntry,
   LovelaceCardConfig,
   Measurement,
   MeasurementKey,
   Plant,
-  PlantsPayload,
 } from "../types";
 
 interface PlantCardConfig extends LovelaceCardConfig, PlantRef {
@@ -39,25 +38,20 @@ const UNDO_SECONDS = 10;
 const LONG_PRESS_MS = 500;
 
 @customElement("rootwise-plant-card")
-export class RootwisePlantCard extends LitElement {
-  @property({ attribute: false }) hass?: HomeAssistant;
+export class RootwisePlantCard extends RootwiseCardBase {
   @state() private config?: PlantCardConfig;
-  @state() private payload?: PlantsPayload;
   @state() private panel: "none" | "when" | "more" = "none";
   @state() private pickTime = "";
   @state() private toast?: Toast;
   @state() private confirmDelete?: string;
   @state() private busy = false;
 
-  private unsubscribe?: () => void;
-  private connection?: HassConnection;
   private pressTimer?: number;
   private longPressed = false;
   private toastTimer?: number;
   private confirmTimer?: number;
 
   static getConfigForm() {
-    const hass = { language: document.documentElement.lang || "en" } as HomeAssistant;
     return {
       schema: [
         {
@@ -67,7 +61,7 @@ export class RootwisePlantCard extends LitElement {
         },
         { name: "show_history", selector: { boolean: {} } },
       ],
-      computeLabel: (schema: { name: string }) => localize(hass, `editor.${schema.name}`),
+      computeLabel: editorLabel,
     };
   }
 
@@ -87,43 +81,14 @@ export class RootwisePlantCard extends LitElement {
     return { columns: 12, min_columns: 6, rows: "auto" };
   }
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.subscribe();
-  }
-
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.unsubscribe?.();
-    this.unsubscribe = undefined;
-    this.connection = undefined;
     window.clearTimeout(this.toastTimer);
     window.clearTimeout(this.confirmTimer);
   }
 
-  protected override willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has("hass")) {
-      this.subscribe();
-      this.toggleAttribute("dark", Boolean(this.hass?.themes?.darkMode));
-    }
-  }
-
-  private subscribe(): void {
-    const hass = this.hass;
-    if (!hass || !this.isConnected || hass.connection === this.connection) return;
-    this.unsubscribe?.();
-    this.connection = hass.connection;
-    this.unsubscribe = subscribePlants(hass, (payload) => {
-      this.payload = payload;
-    });
-  }
-
   private get plant(): Plant | undefined {
     return this.payload && this.config ? findPlant(this.payload.plants, this.config) : undefined;
-  }
-
-  private t(key: string, vars?: Record<string, unknown>): string {
-    return localize(this.hass, key, vars);
   }
 
   // ---- actions ------------------------------------------------------------
@@ -212,13 +177,6 @@ export class RootwisePlantCard extends LitElement {
     this.confirmTimer = window.setTimeout(() => {
       this.confirmDelete = undefined;
     }, 4000);
-  }
-
-  private moreInfo(entityId: string | undefined): void {
-    if (!entityId) return;
-    this.dispatchEvent(
-      new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }),
-    );
   }
 
   // ---- rendering ------------------------------------------------------------
@@ -834,11 +792,6 @@ export class RootwisePlantCard extends LitElement {
       }
     `,
   ];
-}
-
-function errorText(err: unknown): string {
-  if (err && typeof err === "object" && "message" in err) return String(err.message);
-  return String(err);
 }
 
 declare global {
