@@ -1,0 +1,14 @@
+{
+  "domain": "rootwise",
+  "name": "Rootwise",
+  "codeowners": ["@michi-walchsi"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/michi-walchsi/ha-rootwise",
+  "integration_type": "hub",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/michi-walchsi/ha-rootwise/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

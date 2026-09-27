@@ -1,0 +1,262 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Rootwise is already set up. Add plants with \"Add plant\"."
+    },
+    "step": {
+      "user": {
+        "description": "Rootwise keeps track of your houseplants. After setup, add each plant with \"Add plant\".",
+        "title": "Set up Rootwise"
+      }
+    }
+  },
+  "config_subentries": {
+    "plant": {
+      "abort": {
+        "reconfigure_successful": "The plant was updated."
+      },
+      "entry_type": "Plant",
+      "error": {
+        "sensor_in_use": "This moisture sensor already belongs to another plant."
+      },
+      "initiate_flow": {
+        "reconfigure": "Change plant",
+        "user": "Add plant"
+      },
+      "step": {
+        "reconfigure": {
+          "data": {
+            "area": "Room",
+            "name": "Name",
+            "species": "Species"
+          },
+          "sections": {
+            "pot_and_place": {
+              "data": {
+                "drainage": "Drainage hole",
+                "location": "Location",
+                "pot_diameter": "Pot diameter",
+                "pot_material": "Pot material",
+                "window": "Window direction"
+              },
+              "name": "Pot and location"
+            },
+            "sensors": {
+              "data": {
+                "battery_sensor": "Battery",
+                "moisture_sensor": "Soil moisture",
+                "temperature_sensor": "Temperature"
+              },
+              "name": "Sensors"
+            }
+          },
+          "title": "Change plant"
+        },
+        "user": {
+          "data": {
+            "area": "Room",
+            "name": "Name",
+            "species": "Species"
+          },
+          "data_description": {
+            "species": "Pick from the list or type any name."
+          },
+          "description": "Name the plant and connect its sensors. Without a soil sensor, Rootwise reminds you by interval.",
+          "sections": {
+            "pot_and_place": {
+              "data": {
+                "drainage": "Drainage hole",
+                "location": "Location",
+                "pot_diameter": "Pot diameter",
+                "pot_material": "Pot material",
+                "window": "Window direction"
+              },
+              "name": "Pot and location"
+            },
+            "sensors": {
+              "data": {
+                "battery_sensor": "Battery",
+                "moisture_sensor": "Soil moisture",
+                "temperature_sensor": "Temperature"
+              },
+              "data_description": {
+                "moisture_sensor": "Each soil sensor belongs to one plant."
+              },
+              "name": "Sensors"
+            }
+          },
+          "title": "Add plant"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "needs_water": {
+        "name": "Needs water"
+      },
+      "problem": {
+        "name": "Problem"
+      }
+    },
+    "button": {
+      "fertilized": {
+        "name": "Fertilized"
+      },
+      "snooze": {
+        "name": "Snooze 1 day"
+      },
+      "watered": {
+        "name": "Watered"
+      }
+    },
+    "number": {
+      "dry_threshold": {
+        "name": "Dry threshold"
+      },
+      "watering_interval": {
+        "name": "Watering interval"
+      },
+      "wet_threshold": {
+        "name": "Wet threshold"
+      }
+    },
+    "sensor": {
+      "last_watered": {
+        "name": "Last watered"
+      },
+      "plants_needing_water": {
+        "name": "Plants needing water",
+        "unit_of_measurement": "plants"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "no_history": "No watering logged yet",
+          "ok": "OK",
+          "sensor_offline": "Sensor offline",
+          "thirsty": "Thirsty",
+          "too_wet": "Too wet"
+        }
+      }
+    },
+    "switch": {
+      "vacation_mode": {
+        "name": "Vacation mode"
+      }
+    },
+    "todo": {
+      "plant_care": {
+        "name": "Plant care"
+      }
+    }
+  },
+  "exceptions": {
+    "no_plant_selected": {
+      "message": "No Rootwise plant selected. Choose a plant device or one of its entities."
+    },
+    "not_loaded": {
+      "message": "Rootwise is not loaded."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "digest_time": "Daily summary at",
+          "notify_devices": "Phones for notifications"
+        },
+        "data_description": {
+          "notify_devices": "Used from the next version on."
+        },
+        "title": "Rootwise options"
+      }
+    }
+  },
+  "selector": {
+    "care_type": {
+      "options": {
+        "cleaned": "Leaves cleaned",
+        "fertilized": "Fertilized",
+        "note": "Note",
+        "pest_check": "Checked for pests",
+        "pruned": "Pruned",
+        "repotted": "Repotted",
+        "rotated": "Rotated",
+        "watered": "Watered"
+      }
+    },
+    "location": {
+      "options": {
+        "balcony": "Balcony",
+        "indoor": "Indoor",
+        "outdoor": "Outdoor"
+      }
+    },
+    "pot_material": {
+      "options": {
+        "ceramic_glazed": "Glazed ceramic",
+        "plastic": "Plastic",
+        "self_watering": "Self-watering",
+        "terracotta": "Terracotta"
+      }
+    },
+    "window": {
+      "options": {
+        "e": "East",
+        "n": "North",
+        "ne": "North-east",
+        "none": "No window",
+        "nw": "North-west",
+        "s": "South",
+        "se": "South-east",
+        "sw": "South-west",
+        "w": "West"
+      }
+    }
+  },
+  "services": {
+    "log_care": {
+      "description": "Logs a care action for one or more plants, for example watering.",
+      "fields": {
+        "care_type": {
+          "description": "What you did.",
+          "name": "Care"
+        },
+        "note": {
+          "description": "Optional note for the journal.",
+          "name": "Note"
+        },
+        "when": {
+          "description": "When it happened. Defaults to now.",
+          "name": "Time"
+        }
+      },
+      "name": "Log plant care"
+    },
+    "set_vacation": {
+      "description": "Turns vacation mode on or off. Admins only.",
+      "fields": {
+        "enabled": {
+          "description": "On or off.",
+          "name": "Vacation mode"
+        },
+        "until": {
+          "description": "Turns off automatically at this time.",
+          "name": "Until"
+        }
+      },
+      "name": "Set vacation mode"
+    },
+    "snooze": {
+      "description": "Postpones the watering reminder of one or more plants.",
+      "fields": {
+        "days": {
+          "description": "How long to postpone.",
+          "name": "Days"
+        }
+      },
+      "name": "Snooze watering"
+    }
+  }
+}

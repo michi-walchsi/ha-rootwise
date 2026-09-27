@@ -1,0 +1,75 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "needs_water": {
+        "default": "mdi:water-check",
+        "state": {
+          "on": "mdi:water-alert"
+        }
+      }
+    },
+    "button": {
+      "fertilized": {
+        "default": "mdi:bottle-tonic-plus"
+      },
+      "snooze": {
+        "default": "mdi:clock-plus-outline"
+      },
+      "watered": {
+        "default": "mdi:watering-can"
+      }
+    },
+    "number": {
+      "dry_threshold": {
+        "default": "mdi:water-minus"
+      },
+      "watering_interval": {
+        "default": "mdi:calendar-refresh"
+      },
+      "wet_threshold": {
+        "default": "mdi:water-plus"
+      }
+    },
+    "sensor": {
+      "last_watered": {
+        "default": "mdi:watering-can"
+      },
+      "plants_needing_water": {
+        "default": "mdi:watering-can-outline"
+      },
+      "status": {
+        "default": "mdi:sprout",
+        "state": {
+          "no_history": "mdi:sprout-outline",
+          "sensor_offline": "mdi:access-point-network-off",
+          "thirsty": "mdi:water-alert",
+          "too_wet": "mdi:water-off"
+        }
+      }
+    },
+    "switch": {
+      "vacation_mode": {
+        "default": "mdi:airplane",
+        "state": {
+          "off": "mdi:airplane-off"
+        }
+      }
+    },
+    "todo": {
+      "plant_care": {
+        "default": "mdi:sprout"
+      }
+    }
+  },
+  "services": {
+    "log_care": {
+      "service": "mdi:notebook-edit"
+    },
+    "set_vacation": {
+      "service": "mdi:airplane"
+    },
+    "snooze": {
+      "service": "mdi:clock-plus-outline"
+    }
+  }
+}

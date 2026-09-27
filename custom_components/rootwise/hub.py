@@ -1,0 +1,351 @@
+"""Runtime: one PlantRuntime per plant, tied together by the RootwiseHub."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import datetime, timedelta
+import logging
+from typing import Any
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.core import (
+    CALLBACK_TYPE,
+    Event,
+    EventStateChangedData,
+    HomeAssistant,
+    callback,
+)
+from homeassistant.helpers.event import (
+    async_track_point_in_utc_time,
+    async_track_state_change_event,
+    async_track_utc_time_change,
+)
+from homeassistant.util import dt as dt_util
+
+from .const import CARE_WATERED, DEFAULT_INTERVAL, DEFAULT_SNOOZE, SUBENTRY_PLANT
+from .engine.interval import seasonal_interval
+from .engine.status import MoistureReading, PlantInput, PlantStatus, Status, evaluate
+from .engine.thresholds import default_thresholds
+from .models import PlantConfig
+from .species.db import Species, SpeciesDb
+from .store import RootwiseStorage
+
+_LOGGER = logging.getLogger(__name__)
+
+THRESHOLD_LOW = "low"
+THRESHOLD_HIGH = "high"
+
+
+def _parse(value: str | None) -> datetime | None:
+    return dt_util.parse_datetime(value) if value else None
+
+
+class PlantRuntime:
+    """Live state of one plant."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        hub: RootwiseHub,
+        config: PlantConfig,
+        species: Species | None,
+    ) -> None:
+        """Keep references; nothing runs until async_start."""
+        self.hass = hass
+        self.hub = hub
+        self.config = config
+        self.species = species
+        self.state: PlantStatus | None = None
+        self._wet_since: datetime | None = None
+        self._listeners: list[Callable[[], None]] = []
+        self._unsubs: list[CALLBACK_TYPE] = []
+        self._snooze_timer: CALLBACK_TYPE | None = None
+
+    # ---- settings -------------------------------------------------------
+
+    @property
+    def _settings(self) -> dict[str, Any]:
+        return self.hub.storage.plant(self.config.plant_id)
+
+    def thresholds(self) -> tuple[float, float]:
+        """Return (low, high): user override or species default."""
+        style = self.species.watering_style if self.species else ""
+        low, high = default_thresholds(style)
+        own = self._settings.get("thresholds", {})
+        return float(own.get(THRESHOLD_LOW, low)), float(own.get(THRESHOLD_HIGH, high))
+
+    def interval_days(self) -> float:
+        """Return the watering interval: user override or seasonal species value."""
+        if (own := self._settings.get("interval_days")) is not None:
+            return float(own)
+        summer, winter = (
+            (self.species.summer_days, self.species.winter_days)
+            if self.species
+            else DEFAULT_INTERVAL
+        )
+        return seasonal_interval(
+            summer, winter, dt_util.now().month, self.hass.config.latitude
+        )
+
+    @property
+    def last_watered(self) -> datetime | None:
+        """Return the time of the last logged watering."""
+        entry = self.hub.storage.last_entry(self.config.plant_id, CARE_WATERED)
+        return _parse(entry["ts"]) if entry else None
+
+    @property
+    def last_watered_id(self) -> str | None:
+        """Return the journal id of the last watering."""
+        entry = self.hub.storage.last_entry(self.config.plant_id, CARE_WATERED)
+        return entry["id"] if entry else None
+
+    @property
+    def snoozed_until(self) -> datetime | None:
+        """Return the end of the snooze, if any."""
+        return _parse(self._settings.get("snoozed_until"))
+
+    # ---- lifecycle ------------------------------------------------------
+
+    @callback
+    def async_start(self) -> None:
+        """Listen to the moisture sensor and arm the snooze timer."""
+        if self.config.moisture_sensor:
+            self._unsubs.append(
+                async_track_state_change_event(
+                    self.hass, [self.config.moisture_sensor], self._on_sensor_change
+                )
+            )
+        self._arm_snooze_timer()
+
+    @callback
+    def async_stop(self) -> None:
+        """Remove listeners and timers."""
+        for unsub in self._unsubs:
+            unsub()
+        self._unsubs.clear()
+        if self._snooze_timer:
+            self._snooze_timer()
+            self._snooze_timer = None
+
+    @callback
+    def add_listener(self, update: Callable[[], None]) -> CALLBACK_TYPE:
+        """Register an entity update callback."""
+        self._listeners.append(update)
+
+        @callback
+        def _remove() -> None:
+            self._listeners.remove(update)
+
+        return _remove
+
+    @callback
+    def _on_sensor_change(self, event: Event[EventStateChangedData]) -> None:
+        self.async_evaluate()
+
+    # ---- evaluation -----------------------------------------------------
+
+    def _reading(self) -> MoistureReading | None:
+        if not self.config.moisture_sensor:
+            return None
+        state = self.hass.states.get(self.config.moisture_sensor)
+        if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+            return MoistureReading(value=None, last_reported=None)
+        try:
+            value = float(state.state)
+        except ValueError:
+            return MoistureReading(value=None, last_reported=None)
+        return MoistureReading(value=value, last_reported=state.last_reported)
+
+    @callback
+    def async_evaluate(self) -> None:
+        """Recompute the status and notify entities."""
+        low, high = self.thresholds()
+        result = evaluate(
+            PlantInput(
+                now=dt_util.utcnow(),
+                low=low,
+                high=high,
+                interval_days=self.interval_days(),
+                moisture=self._reading(),
+                last_watered=self.last_watered,
+                snoozed_until=self.snoozed_until,
+                previous=self.state.status if self.state else None,
+                wet_since=self._wet_since,
+            )
+        )
+        self._wet_since = result.wet_since
+        self.state = result
+        for update in list(self._listeners):
+            update()
+        self.hub.async_notify()
+
+    # ---- actions --------------------------------------------------------
+
+    @callback
+    def async_log_care(
+        self,
+        care_type: str,
+        source: str,
+        when: datetime | None = None,
+        note: str | None = None,
+    ) -> None:
+        """Log a care action; watering also ends a snooze."""
+        self.hub.storage.async_add_entry(
+            self.config.plant_id, care_type, source, when, note
+        )
+        if care_type == CARE_WATERED and self._settings.get("snoozed_until"):
+            self._settings["snoozed_until"] = None
+            self.hub.storage.async_save_data()
+            self._arm_snooze_timer()
+        self.async_evaluate()
+
+    @callback
+    def async_snooze(self, duration: timedelta = DEFAULT_SNOOZE) -> None:
+        """Hide 'needs water' for a while."""
+        self._settings["snoozed_until"] = (dt_util.utcnow() + duration).isoformat()
+        self.hub.storage.async_save_data()
+        self._arm_snooze_timer()
+        self.async_evaluate()
+
+    @callback
+    def async_set_threshold(self, key: str, value: float) -> None:
+        """Override the dry (low) or wet (high) threshold."""
+        self._settings.setdefault("thresholds", {})[key] = value
+        self.hub.storage.async_save_data()
+        self.async_evaluate()
+
+    @callback
+    def async_set_interval(self, days: float) -> None:
+        """Override the watering interval (plants without sensor)."""
+        self._settings["interval_days"] = days
+        self.hub.storage.async_save_data()
+        self.async_evaluate()
+
+    @callback
+    def _arm_snooze_timer(self) -> None:
+        if self._snooze_timer:
+            self._snooze_timer()
+            self._snooze_timer = None
+        until = self.snoozed_until
+        if until and until > dt_util.utcnow():
+            self._snooze_timer = async_track_point_in_utc_time(
+                self.hass, self._on_snooze_end, until + timedelta(seconds=1)
+            )
+
+    @callback
+    def _on_snooze_end(self, _now: datetime) -> None:
+        self._snooze_timer = None
+        self.async_evaluate()
+
+
+class RootwiseHub:
+    """All plants of the config entry plus global state."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        storage: RootwiseStorage,
+        species_db: SpeciesDb,
+    ) -> None:
+        """Create a runtime for every plant subentry."""
+        self.hass = hass
+        self.entry = entry
+        self.storage = storage
+        self.species_db = species_db
+        self.plants: dict[str, PlantRuntime] = {}
+        self._listeners: list[Callable[[], None]] = []
+        self._unsub_tick: CALLBACK_TYPE | None = None
+        self._ready = False
+        for subentry in entry.subentries.values():
+            if subentry.subentry_type != SUBENTRY_PLANT:
+                continue
+            config = PlantConfig.from_subentry(subentry)
+            self.plants[config.plant_id] = PlantRuntime(
+                hass, self, config, species_db.get(config.species_id)
+            )
+        storage.async_prune(set(self.plants))
+
+    @callback
+    def async_start(self) -> None:
+        """Evaluate every plant and start listening."""
+        for plant in self.plants.values():
+            plant.async_evaluate()
+            plant.async_start()
+        self._ready = True
+        self.async_notify()
+        self._unsub_tick = async_track_utc_time_change(
+            self.hass, self._on_tick, minute=0, second=7
+        )
+
+    async def async_shutdown(self) -> None:
+        """Stop everything and write pending data."""
+        if self._unsub_tick:
+            self._unsub_tick()
+            self._unsub_tick = None
+        for plant in self.plants.values():
+            plant.async_stop()
+        await self.storage.async_flush()
+
+    @callback
+    def _on_tick(self, _now: datetime) -> None:
+        # Hourly: stale sensors, interval due dates, season changes.
+        for plant in self.plants.values():
+            plant.async_evaluate()
+
+    @callback
+    def add_listener(self, update: Callable[[], None]) -> CALLBACK_TYPE:
+        """Register a callback for hub-level entities."""
+        self._listeners.append(update)
+
+        @callback
+        def _remove() -> None:
+            self._listeners.remove(update)
+
+        return _remove
+
+    @callback
+    def async_notify(self) -> None:
+        """Tell hub-level entities that something changed."""
+        if not self._ready:
+            return
+        for update in list(self._listeners):
+            update()
+
+    # ---- global state ---------------------------------------------------
+
+    @property
+    def vacation(self) -> bool:
+        """Return True while vacation mode is on."""
+        vacation = self.storage.data.get("vacation", {})
+        if not vacation.get("on"):
+            return False
+        until = _parse(vacation.get("until"))
+        return until is None or until > dt_util.utcnow()
+
+    @callback
+    def async_set_vacation(self, enabled: bool, until: datetime | None = None) -> None:
+        """Switch vacation mode on or off."""
+        self.storage.data["vacation"] = {
+            "on": enabled,
+            "until": until.isoformat() if enabled and until else None,
+        }
+        self.storage.async_save_data()
+        self.async_notify()
+
+    def plants_needing_water(self) -> list[PlantRuntime]:
+        """Return plants that need water now."""
+        return [
+            p
+            for p in self.plants.values()
+            if p.state is not None and p.state.needs_water
+        ]
+
+    def status_counts(self) -> dict[str, int]:
+        """Return how many plants have each status."""
+        counts: dict[str, int] = {s.value: 0 for s in Status}
+        for plant in self.plants.values():
+            if plant.state is not None:
+                counts[plant.state.status.value] += 1
+        return counts

@@ -1,0 +1,262 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Rootwise ist schon eingerichtet. Pflanzen fügst du mit „Pflanze hinzufügen“ hinzu."
+    },
+    "step": {
+      "user": {
+        "description": "Rootwise kümmert sich um deine Zimmerpflanzen. Nach der Einrichtung legst du jede Pflanze mit „Pflanze hinzufügen“ an.",
+        "title": "Rootwise einrichten"
+      }
+    }
+  },
+  "config_subentries": {
+    "plant": {
+      "abort": {
+        "reconfigure_successful": "Die Pflanze wurde geändert."
+      },
+      "entry_type": "Pflanze",
+      "error": {
+        "sensor_in_use": "Dieser Bodenfeuchtesensor gehört schon zu einer anderen Pflanze."
+      },
+      "initiate_flow": {
+        "reconfigure": "Pflanze ändern",
+        "user": "Pflanze hinzufügen"
+      },
+      "step": {
+        "reconfigure": {
+          "data": {
+            "area": "Raum",
+            "name": "Name",
+            "species": "Art"
+          },
+          "sections": {
+            "pot_and_place": {
+              "data": {
+                "drainage": "Abzugsloch",
+                "location": "Standort",
+                "pot_diameter": "Topfdurchmesser",
+                "pot_material": "Topfmaterial",
+                "window": "Fensterrichtung"
+              },
+              "name": "Topf und Standort"
+            },
+            "sensors": {
+              "data": {
+                "battery_sensor": "Batterie",
+                "moisture_sensor": "Bodenfeuchte",
+                "temperature_sensor": "Temperatur"
+              },
+              "name": "Sensoren"
+            }
+          },
+          "title": "Pflanze ändern"
+        },
+        "user": {
+          "data": {
+            "area": "Raum",
+            "name": "Name",
+            "species": "Art"
+          },
+          "data_description": {
+            "species": "Aus der Liste wählen oder einen beliebigen Namen eintippen."
+          },
+          "description": "Gib der Pflanze einen Namen und verbinde ihre Sensoren. Ohne Bodensensor erinnert Rootwise nach Intervall.",
+          "sections": {
+            "pot_and_place": {
+              "data": {
+                "drainage": "Abzugsloch",
+                "location": "Standort",
+                "pot_diameter": "Topfdurchmesser",
+                "pot_material": "Topfmaterial",
+                "window": "Fensterrichtung"
+              },
+              "name": "Topf und Standort"
+            },
+            "sensors": {
+              "data": {
+                "battery_sensor": "Batterie",
+                "moisture_sensor": "Bodenfeuchte",
+                "temperature_sensor": "Temperatur"
+              },
+              "data_description": {
+                "moisture_sensor": "Jeder Bodensensor gehört zu genau einer Pflanze."
+              },
+              "name": "Sensoren"
+            }
+          },
+          "title": "Pflanze hinzufügen"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "needs_water": {
+        "name": "Braucht Wasser"
+      },
+      "problem": {
+        "name": "Problem"
+      }
+    },
+    "button": {
+      "fertilized": {
+        "name": "Gedüngt"
+      },
+      "snooze": {
+        "name": "+1 Tag"
+      },
+      "watered": {
+        "name": "Gegossen"
+      }
+    },
+    "number": {
+      "dry_threshold": {
+        "name": "Trocken-Schwelle"
+      },
+      "watering_interval": {
+        "name": "Gieß-Intervall"
+      },
+      "wet_threshold": {
+        "name": "Nass-Schwelle"
+      }
+    },
+    "sensor": {
+      "last_watered": {
+        "name": "Zuletzt gegossen"
+      },
+      "plants_needing_water": {
+        "name": "Pflanzen brauchen Wasser",
+        "unit_of_measurement": "Pflanzen"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "no_history": "Noch nicht gegossen eingetragen",
+          "ok": "Alles gut",
+          "sensor_offline": "Sensor offline",
+          "thirsty": "Durstig",
+          "too_wet": "Zu nass"
+        }
+      }
+    },
+    "switch": {
+      "vacation_mode": {
+        "name": "Urlaubsmodus"
+      }
+    },
+    "todo": {
+      "plant_care": {
+        "name": "Pflanzenpflege"
+      }
+    }
+  },
+  "exceptions": {
+    "no_plant_selected": {
+      "message": "Keine Rootwise-Pflanze ausgewählt. Wähle ein Pflanzen-Gerät oder eine seiner Entitäten."
+    },
+    "not_loaded": {
+      "message": "Rootwise ist nicht geladen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "digest_time": "Tägliche Übersicht um",
+          "notify_devices": "Handys für Benachrichtigungen"
+        },
+        "data_description": {
+          "notify_devices": "Wird ab der nächsten Version genutzt."
+        },
+        "title": "Rootwise-Optionen"
+      }
+    }
+  },
+  "selector": {
+    "care_type": {
+      "options": {
+        "cleaned": "Blätter gereinigt",
+        "fertilized": "Gedüngt",
+        "note": "Notiz",
+        "pest_check": "Auf Schädlinge geprüft",
+        "pruned": "Geschnitten",
+        "repotted": "Umgetopft",
+        "rotated": "Gedreht",
+        "watered": "Gegossen"
+      }
+    },
+    "location": {
+      "options": {
+        "balcony": "Balkon",
+        "indoor": "Drinnen",
+        "outdoor": "Draußen"
+      }
+    },
+    "pot_material": {
+      "options": {
+        "ceramic_glazed": "Keramik glasiert",
+        "plastic": "Kunststoff",
+        "self_watering": "Selbstbewässerung",
+        "terracotta": "Terrakotta"
+      }
+    },
+    "window": {
+      "options": {
+        "e": "Osten",
+        "n": "Norden",
+        "ne": "Nordosten",
+        "none": "Kein Fenster",
+        "nw": "Nordwesten",
+        "s": "Süden",
+        "se": "Südosten",
+        "sw": "Südwesten",
+        "w": "Westen"
+      }
+    }
+  },
+  "services": {
+    "log_care": {
+      "description": "Trägt eine Pflege für eine oder mehrere Pflanzen ein, zum Beispiel Gießen.",
+      "fields": {
+        "care_type": {
+          "description": "Was du gemacht hast.",
+          "name": "Pflege"
+        },
+        "note": {
+          "description": "Optionale Notiz fürs Journal.",
+          "name": "Notiz"
+        },
+        "when": {
+          "description": "Wann es war. Standard: jetzt.",
+          "name": "Zeitpunkt"
+        }
+      },
+      "name": "Pflege eintragen"
+    },
+    "set_vacation": {
+      "description": "Schaltet den Urlaubsmodus ein oder aus. Nur für Admins.",
+      "fields": {
+        "enabled": {
+          "description": "Ein oder aus.",
+          "name": "Urlaubsmodus"
+        },
+        "until": {
+          "description": "Schaltet sich zu diesem Zeitpunkt automatisch aus.",
+          "name": "Bis"
+        }
+      },
+      "name": "Urlaubsmodus setzen"
+    },
+    "snooze": {
+      "description": "Verschiebt die Gieß-Erinnerung einer oder mehrerer Pflanzen.",
+      "fields": {
+        "days": {
+          "description": "Wie lange verschieben.",
+          "name": "Tage"
+        }
+      },
+      "name": "Gießen verschieben"
+    }
+  }
+}
