@@ -6,11 +6,12 @@ from typing import Any
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.auth.const import GROUP_ID_USER
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
-from custom_components.rootwise.const import CARE_WATERED
+from custom_components.rootwise.const import CARE_WATERED, DOMAIN
 
 from .conftest import subentry_id
 
@@ -77,6 +78,10 @@ async def test_plants(hass: HomeAssistant, entry: MockConfigEntry, client) -> No
     assert monstera["id"] == subentry_id(entry, "Monstera")
     assert monstera["status"] == "ok"
     assert monstera["entity_ids"]["status"] == "sensor.monstera_status"
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, monstera["id"]), entry.entry_id
+    )
+    assert monstera["device_id"] == device.id
     assert monstera["entity_ids"]["watered"] == "button.monstera_watered"
     assert monstera["species"]["scientific"] == "Monstera deliciosa"
     moisture = monstera["measurements"]["soil_moisture"]
@@ -133,7 +138,8 @@ async def test_log_watering_yesterday(
     assert logged["ts"] == "2026-09-26T17:00:00+00:00"
     assert logged["source"] == "card"
     assert logged["user_id"] == hass_admin_user.id
-    assert logged["data"] == {"moisture": 38.0}
+    # Today's value says nothing about yesterday's watering.
+    assert "data" not in logged
     assert (
         hass.states.get("sensor.monstera_last_watered").state
         == "2026-09-26T17:00:00+00:00"

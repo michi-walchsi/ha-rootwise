@@ -45,6 +45,7 @@ export interface Reason {
 export interface Plant {
   id: string;
   name: string;
+  device_id: string | null;
   area: string | null;
   entity_ids: Record<string, string>;
   status: Status | null;
@@ -83,4 +84,10 @@ export interface HomeAssistant {
   locale?: { language: string };
   user?: { id: string; is_admin: boolean; name?: string };
   themes?: { darkMode?: boolean };
+  entities?: Record<string, { entity_id: string; device_id?: string; platform?: string }>;
+}
+
+export interface LovelaceCardConfig {
+  type: string;
+  [key: string]: unknown;
 }

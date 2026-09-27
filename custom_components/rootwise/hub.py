@@ -361,8 +361,8 @@ class PlantRuntime:
     ) -> dict[str, Any]:
         """Log a care action; watering also ends a snooze.
 
-        The soil moisture at logging time is kept with the entry: it labels
-        real data for the watering detection later on.
+        The soil moisture at logging time is kept with entries for "now": it
+        labels real data for the watering detection later on.
         """
         if when is not None:
             when = dt_util.as_utc(when)  # a naive time means local time
@@ -370,7 +370,9 @@ class PlantRuntime:
                 raise FutureTimeError(when)
         data: dict[str, Any] = {}
         reading = self.measurements.get("soil_moisture")
-        if reading is not None and reading.value is not None:
+        # Only for "now": today's value says nothing about an earlier watering.
+        recent = when is None or dt_util.utcnow() - when <= FUTURE_TOLERANCE
+        if recent and reading is not None and reading.value is not None:
             data["moisture"] = reading.value
         entry = self.hub.storage.async_add_entry(
             self.config.plant_id,
