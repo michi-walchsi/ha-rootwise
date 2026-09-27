@@ -86,6 +86,14 @@ class SpeciesDb:
         """Return one species or None."""
         return self._by_id.get(species_id)
 
+    def find_scientific(self, name: str) -> Species | None:
+        """Return the species with this scientific name (any case) or None."""
+        wanted = name.strip().casefold()
+        return next(
+            (s for s in self._by_id.values() if s.scientific.casefold() == wanted),
+            None,
+        )
+
 
 @cache
 def _load_bundled() -> SpeciesDb:

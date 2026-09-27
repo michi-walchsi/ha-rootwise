@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
@@ -84,6 +84,21 @@ def _range_from(raw: Any) -> Range | None:
         float(low) if low is not None else None,
         float(high) if high is not None else None,
     )
+
+
+def species_range(
+    key: str, species_info: Mapping[str, Any] | None, species: Species | None
+) -> tuple[Range | None, str | None]:
+    """Return a measurement's range from the species snapshot or offline list."""
+    info = species_info or {}
+    if (opb := _range_from(info.get("ranges", {}).get(key))) is not None:
+        return opb, str(info.get("source", "openplantbook"))
+    if species is not None:
+        if key == "temperature":
+            return Range(species.temp_min, species.temp_max), "offline"
+        if key == "air_humidity":
+            return Range(species.humidity_min, None), "offline"
+    return None, None
 
 
 class PlantRuntime:
@@ -185,14 +200,9 @@ class PlantRuntime:
             return Range(low, high), "custom" if custom else "species"
         if (own := _range_from(self.config.ranges.get(key))) is not None:
             return own, "custom"
-        info = self.config.species_info or {}
-        if (opb := _range_from(info.get("ranges", {}).get(key))) is not None:
-            return opb, str(info.get("source", "openplantbook"))
-        if self.species is not None:
-            if key == "temperature":
-                return Range(self.species.temp_min, self.species.temp_max), "offline"
-            if key == "air_humidity":
-                return Range(self.species.humidity_min, None), "offline"
+        target, source = species_range(key, self.config.species_info, self.species)
+        if target is not None:
+            return target, source
         if key == "battery":
             return Range(BATTERY_LOW, None), "default"
         return None, None

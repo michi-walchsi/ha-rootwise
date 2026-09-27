@@ -17,6 +17,8 @@
       },
       "entry_type": "Pflanze",
       "error": {
+        "no_results": "Nichts gefunden. Versuch den wissenschaftlichen Namen oder einen kürzeren Begriff.",
+        "opb_failed": "OpenPlantbook antwortet nicht. Versuch es gleich noch einmal oder mach ohne weiter.",
         "sensor_in_use": "Dieser Bodenfeuchtesensor gehört schon zu einer anderen Pflanze."
       },
       "initiate_flow": {
@@ -24,18 +26,7 @@
         "user": "Pflanze hinzufügen"
       },
       "step": {
-        "pot": {
-          "data": {
-            "drainage": "Abzugsloch",
-            "location": "Standort",
-            "pot_diameter": "Topfdurchmesser",
-            "pot_material": "Topfmaterial",
-            "window": "Fensterrichtung"
-          },
-          "description": "Schritt 3 von 3. Hilft bei der Gießmenge und später bei Licht-Tipps.",
-          "title": "Topf und Standort"
-        },
-        "reconfigure": {
+        "basics": {
           "data": {
             "area": "Raum",
             "moisture_sensor": "Bodenfeuchtesensor",
@@ -45,10 +36,57 @@
           "data_description": {
             "area": "Damit schlägt Rootwise im nächsten Schritt Raumsensoren vor.",
             "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall. Spiegel-Sensoren (z. B. von Plant Monitor) stehen nicht zur Wahl: Nimm den echten Sensor, sonst fehlt der Wert, sobald Plant Monitor weg ist.",
-            "species": "Bestimmt Gießstil und Start-Schwellen. Weitere Arten kommen mit der nächsten Version."
+            "species": "Aus der eingebauten Liste; bestimmt Gießstil und Start-Schwellen. Vorausgewählt, wenn sie zur OpenPlantbook-Art passt."
           },
-          "description": "Schritt 1 von 3: Name, Art, Raum und Bodensensor.",
+          "description": "Name, Raum und Bodensensor.",
+          "title": "Pflanze"
+        },
+        "pick": {
+          "data": {
+            "pid": "Art"
+          },
+          "description": "{count} Treffer für „{query}“. Wähle nichts aus, um neu zu suchen.",
+          "title": "Art auswählen"
+        },
+        "pot": {
+          "data": {
+            "drainage": "Abzugsloch",
+            "location": "Standort",
+            "pot_diameter": "Topfdurchmesser",
+            "pot_material": "Topfmaterial",
+            "window": "Fensterrichtung"
+          },
+          "description": "Hilft bei der Gießmenge und später bei Licht-Tipps.",
+          "title": "Topf und Standort"
+        },
+        "ranges": {
+          "data": {
+            "air_humidity_max": "Luftfeuchte höchstens",
+            "air_humidity_min": "Luftfeuchte mindestens",
+            "conductivity_max": "Düngerstand höchstens",
+            "conductivity_min": "Düngerstand mindestens",
+            "illuminance_max": "Licht höchstens",
+            "illuminance_min": "Licht mindestens",
+            "temperature_max": "Temperatur höchstens",
+            "temperature_min": "Temperatur mindestens"
+          },
+          "description": "Vorgeschlagen von OpenPlantbook oder der eingebauten Artenliste. Verlässt ein Wert seinen Bereich, zeigt Rootwise einen Hinweis; ein Problem meldet nur die Bodenfeuchte. Lass ein Feld leer für keine Grenze.",
+          "title": "Zielbereiche"
+        },
+        "reconfigure": {
+          "description": "Was möchtest du ändern?",
+          "menu_options": {
+            "basics": "Name, Raum, Sensoren und Topf",
+            "search": "Art aus OpenPlantbook (suchen oder aktualisieren)"
+          },
           "title": "Pflanze ändern"
+        },
+        "search": {
+          "data": {
+            "query": "Suchbegriff"
+          },
+          "description": "Wissenschaftlicher oder deutscher Name, zum Beispiel „Monstera“ oder „Ficus lyrata“.",
+          "title": "Art suchen"
         },
         "sensors": {
           "data": {
@@ -65,22 +103,15 @@
             "illuminance_sensor": "Ein Lux-Sensor am Fenster. Mehrere Pflanzen dürfen ihn teilen. Rootwise rechnet daraus in einer späteren Version die Tages-Lichtmenge (DLI).",
             "temperature_sensor": "Am besten die Temperatur des Bodensensors selbst. Sonst ein Raumsensor in der Nähe der Pflanze."
           },
-          "description": "Schritt 2 von 3. Vorgeschlagen vom Gerät des Bodensensors und aus dem Raum. Alle Felder sind optional; entferne, was nicht passt. Spiegel-Sensoren von Plant Monitor und Rootwise stehen nicht zur Wahl.",
+          "description": "Vorgeschlagen vom Gerät des Bodensensors und aus dem Raum. Alle Felder sind optional; entferne, was nicht passt. Spiegel-Sensoren von Plant Monitor und Rootwise stehen nicht zur Wahl.",
           "title": "Weitere Sensoren"
         },
         "user": {
-          "data": {
-            "area": "Raum",
-            "moisture_sensor": "Bodenfeuchtesensor",
-            "name": "Name",
-            "species": "Art"
+          "description": "Finde die Art in OpenPlantbook: Du bekommst ein Bild, den deutschen Namen und Zielbereiche für Temperatur, Luftfeuchte und Licht.",
+          "menu_options": {
+            "basics": "Ohne OpenPlantbook weiter",
+            "search": "In OpenPlantbook suchen"
           },
-          "data_description": {
-            "area": "Damit schlägt Rootwise im nächsten Schritt Raumsensoren vor.",
-            "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall. Spiegel-Sensoren (z. B. von Plant Monitor) stehen nicht zur Wahl: Nimm den echten Sensor, sonst fehlt der Wert, sobald Plant Monitor weg ist.",
-            "species": "Bestimmt Gießstil und Start-Schwellen. Weitere Arten kommen mit der nächsten Version."
-          },
-          "description": "Schritt 1 von 3: Name, Art, Raum und Bodensensor.",
           "title": "Pflanze hinzufügen"
         }
       }

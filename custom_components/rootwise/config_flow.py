@@ -45,11 +45,14 @@ from .const import (
     CONF_NOTIFY_DEVICES,
     CONF_POT_DIAMETER,
     CONF_POT_MATERIAL,
+    CONF_RANGES,
     CONF_SPECIES,
+    CONF_SPECIES_INFO,
     CONF_WINDOW,
     DEFAULT_DIGEST_TIME,
     DOMAIN,
     LOCATIONS,
+    MEASUREMENTS,
     POT_KEYS,
     POT_MATERIALS,
     SENSOR_DEVICE_CLASSES,
@@ -57,6 +60,8 @@ from .const import (
     SUBENTRY_PLANT,
     WINDOWS,
 )
+from .hub import species_range
+from .opb import OpbError, async_search, async_species_info, opb_available
 from .sources import mirror_entities, resolve
 from .species.db import SpeciesDb
 from .suggest import suggest_sensors
@@ -215,13 +220,43 @@ def pot_schema() -> vol.Schema:
     )
 
 
+# Target ranges set in the flow: key → (unit, step, upper limit).
+RANGE_FIELDS: dict[str, tuple[str, float, float]] = {
+    "temperature": ("°C", 0.5, 50),
+    "air_humidity": ("%", 1, 100),
+    "illuminance": ("lx", 100, 150000),
+    "conductivity": ("µS/cm", 10, 10000),
+}
+
+
+def ranges_schema(keys: list[str]) -> vol.Schema:
+    """Build the min/max fields for each climate value that has a sensor."""
+    fields: dict[Any, Any] = {}
+    for key in keys:
+        unit, step, upper = RANGE_FIELDS[key]
+        number = NumberSelector(
+            NumberSelectorConfig(
+                min=0,
+                max=upper,
+                step=step,
+                unit_of_measurement=unit,
+                mode=NumberSelectorMode.BOX,
+            )
+        )
+        fields[vol.Optional(f"{key}_min")] = number
+        fields[vol.Optional(f"{key}_max")] = number
+    return vol.Schema(fields)
+
+
 class PlantSubentryFlow(ConfigSubentryFlow):
-    """Add or change a plant in three short steps."""
+    """Add or change a plant: species, basics, sensors, target ranges, pot."""
 
     def __init__(self) -> None:
         """Collect the plant across steps."""
         self._name = ""
         self._data: dict[str, Any] = {}
+        self._query = ""
+        self._hits: list[tuple[str, str]] = []
 
     @property
     def _reconfiguring(self) -> bool:
@@ -230,22 +265,95 @@ class PlantSubentryFlow(ConfigSubentryFlow):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Step 1 when adding."""
-        return await self._async_basics("user", user_input)
+        """Start: search OpenPlantbook if it is set up, else the basics."""
+        if opb_available(self.hass):
+            return self.async_show_menu(
+                step_id="user", menu_options=["search", "basics"]
+            )
+        return await self.async_step_basics()
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Step 1 when changing; starts from the stored plant."""
-        if user_input is None and not self._name:
-            current = self._get_reconfigure_subentry()
-            self._name = current.title
-            self._data = _real_sensors(self.hass, dict(current.data))
-        return await self._async_basics("reconfigure", user_input)
+        """Change a plant; starts from the stored plant."""
+        current = self._get_reconfigure_subentry()
+        self._name = current.title
+        self._data = _real_sensors(self.hass, dict(current.data))
+        if opb_available(self.hass):
+            return self.async_show_menu(
+                step_id="reconfigure", menu_options=["search", "basics"]
+            )
+        return await self.async_step_basics()
 
-    async def _async_basics(
-        self, step_id: str, user_input: dict[str, Any] | None
+    async def async_step_search(
+        self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
+        """Search a species in OpenPlantbook."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._query = str(user_input.get("query", "")).strip()
+            try:
+                self._hits = (
+                    await async_search(self.hass, self._query) if self._query else []
+                )
+            except OpbError:
+                errors["base"] = "opb_failed"
+            else:
+                if self._hits:
+                    return await self.async_step_pick()
+                errors["base"] = "no_results"
+        elif not self._query:
+            self._query = await self._default_query()
+        schema = vol.Schema({vol.Required("query"): TextSelector()})
+        return self.async_show_form(
+            step_id="search",
+            data_schema=self.add_suggested_values_to_schema(
+                schema, {"query": self._query}
+            ),
+            errors=errors,
+        )
+
+    async def async_step_pick(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Pick one of the hits; nothing picked searches again."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            if not (pid := user_input.get("pid")):
+                return await self.async_step_search()
+            try:
+                info = await async_species_info(self.hass, str(pid))
+            except OpbError:
+                errors["base"] = "opb_failed"
+            else:
+                await self._apply_species(info)
+                return await self.async_step_basics()
+        options = [SelectOptionDict(value=pid, label=name) for pid, name in self._hits]
+        mode = (
+            SelectSelectorMode.LIST
+            if len(options) <= 8
+            else SelectSelectorMode.DROPDOWN
+        )
+        return self.async_show_form(
+            step_id="pick",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional("pid"): SelectSelector(
+                        SelectSelectorConfig(options=options, mode=mode)
+                    )
+                }
+            ),
+            errors=errors,
+            description_placeholders={
+                "query": self._query,
+                "count": str(len(self._hits)),
+            },
+        )
+
+    async def async_step_basics(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Name, species (watering style), room and soil sensor."""
         errors: dict[str, str] = {}
         if user_input is not None:
             moisture = user_input.get(CONF_MOISTURE_SENSOR)
@@ -263,7 +371,7 @@ class PlantSubentryFlow(ConfigSubentryFlow):
             **{k: self._data[k] for k in BASIC_KEYS if k in self._data},
         }
         return self.async_show_form(
-            step_id=step_id,
+            step_id="basics",
             data_schema=self.add_suggested_values_to_schema(
                 basics_schema(
                     db, self.hass.config.language, mirror_entities(self.hass)
@@ -276,10 +384,10 @@ class PlantSubentryFlow(ConfigSubentryFlow):
     async def async_step_sensors(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Step 2: further sensors, prefilled from the soil sensor and the room."""
+        """Further sensors, prefilled from the soil sensor and the room."""
         if user_input is not None:
             self._merge(user_input, SENSOR_KEYS)
-            return await self.async_step_pot()
+            return await self.async_step_ranges()
         if self._reconfiguring:
             values = {k: self._data[k] for k in SENSOR_KEYS if k in self._data}
         else:
@@ -295,10 +403,61 @@ class PlantSubentryFlow(ConfigSubentryFlow):
             ),
         )
 
+    async def async_step_ranges(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Target ranges for the climate values that have a sensor."""
+        keys = [
+            key
+            for key, field, _ in MEASUREMENTS
+            if key in RANGE_FIELDS and self._data.get(field)
+        ]
+        if not keys:
+            self._data.pop(CONF_RANGES, None)
+            return await self.async_step_pot()
+        db = await async_get_species_db(self.hass)
+        species = db.get(str(self._data.get(CONF_SPECIES, "")))
+        info = self._data.get(CONF_SPECIES_INFO)
+        defaults = {key: species_range(key, info, species)[0] for key in keys}
+
+        if user_input is not None:
+            custom: dict[str, dict[str, float | None]] = {}
+            for key in keys:
+                low = user_input.get(f"{key}_min")
+                high = user_input.get(f"{key}_max")
+                default = defaults[key]
+                if default is not None and (low, high) == (default.min, default.max):
+                    continue  # unchanged: stays with the species
+                if low is None and high is None:
+                    continue
+                custom[key] = {"min": low, "max": high}
+            if custom:
+                self._data[CONF_RANGES] = custom
+            else:
+                self._data.pop(CONF_RANGES, None)
+            return await self.async_step_pot()
+
+        stored = self._data.get(CONF_RANGES, {})
+        values: dict[str, float] = {}
+        for key in keys:
+            default = defaults[key]
+            current = stored.get(key) or (
+                {"min": default.min, "max": default.max} if default else {}
+            )
+            for bound in ("min", "max"):
+                if current.get(bound) is not None:
+                    values[f"{key}_{bound}"] = current[bound]
+        return self.async_show_form(
+            step_id="ranges",
+            data_schema=self.add_suggested_values_to_schema(
+                ranges_schema(keys), values
+            ),
+        )
+
     async def async_step_pot(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Step 3: pot and place, then save."""
+        """Pot and place, then save."""
         if user_input is not None:
             self._merge(user_input, POT_KEYS)
             moisture = self._data.get(CONF_MOISTURE_SENSOR)
@@ -318,6 +477,26 @@ class PlantSubentryFlow(ConfigSubentryFlow):
             step_id="pot",
             data_schema=self.add_suggested_values_to_schema(pot_schema(), values),
         )
+
+    async def _default_query(self) -> str:
+        """First search term: the known species, else the plant's name."""
+        if info := self._data.get(CONF_SPECIES_INFO):
+            return str(info.get("scientific", ""))
+        db = await async_get_species_db(self.hass)
+        if species := db.get(str(self._data.get(CONF_SPECIES, ""))):
+            return species.scientific
+        return self._name
+
+    async def _apply_species(self, info: dict[str, Any]) -> None:
+        """Store the snapshot, match the offline species, propose a name."""
+        self._data[CONF_SPECIES_INFO] = info
+        db = await async_get_species_db(self.hass)
+        if match := db.find_scientific(info["scientific"]):
+            self._data[CONF_SPECIES] = match.id
+        else:
+            self._data.pop(CONF_SPECIES, None)
+        if not self._reconfiguring:
+            self._name = info.get("common") or info["scientific"]
 
     def _merge(self, user_input: dict[str, Any], keys: tuple[str, ...]) -> None:
         """Take this step's fields; an emptied field removes the value."""

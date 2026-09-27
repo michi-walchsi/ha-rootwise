@@ -67,7 +67,7 @@ async def test_add_plant_in_three_steps(
     hass: HomeAssistant, entry: MockConfigEntry
 ) -> None:
     result = await _start(hass, entry)
-    assert result["step_id"] == "user"
+    assert result["step_id"] == "basics"
 
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"], {"name": "Grünlilie", "species": "chlorophytum_comosum"}
@@ -155,14 +155,14 @@ async def test_moisture_sensor_cannot_be_shared(
         result["flow_id"], {"name": "Zweite", "moisture_sensor": MOISTURE}
     )
     assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "user"
+    assert result["step_id"] == "basics"
     assert result["errors"] == {"base": "sensor_in_use"}
 
 
 async def test_reconfigure_plant(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     sid = subentry_id(entry, "Monstera")
     result = await entry.start_subentry_reconfigure_flow(hass, sid)
-    assert result["step_id"] == "reconfigure"
+    assert result["step_id"] == "basics"
     assert suggested(result)["name"] == "Monstera"
 
     result = await hass.config_entries.subentries.async_configure(
@@ -211,4 +211,4 @@ async def test_panel_can_start_plant_flow_via_rest(
     )
     assert resp.status == 200
     body = await resp.json()
-    assert body["step_id"] == "user"
+    assert body["step_id"] == "basics"

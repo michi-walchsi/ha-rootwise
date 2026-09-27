@@ -17,6 +17,8 @@
       },
       "entry_type": "Plant",
       "error": {
+        "no_results": "Nothing found. Try the scientific name or a shorter term.",
+        "opb_failed": "OpenPlantbook did not answer. Try again in a moment, or continue without it.",
         "sensor_in_use": "This moisture sensor already belongs to another plant."
       },
       "initiate_flow": {
@@ -24,18 +26,7 @@
         "user": "Add plant"
       },
       "step": {
-        "pot": {
-          "data": {
-            "drainage": "Drainage hole",
-            "location": "Location",
-            "pot_diameter": "Pot diameter",
-            "pot_material": "Pot material",
-            "window": "Window direction"
-          },
-          "description": "Step 3 of 3. Helps with the watering amount and later with light tips.",
-          "title": "Pot and location"
-        },
-        "reconfigure": {
+        "basics": {
           "data": {
             "area": "Room",
             "moisture_sensor": "Soil moisture sensor",
@@ -45,10 +36,57 @@
           "data_description": {
             "area": "Used to suggest room sensors in the next step.",
             "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval. Mirror sensors (for example from Plant Monitor) are not offered: pick the real sensor, or the value disappears once Plant Monitor is gone.",
-            "species": "Sets watering style and default thresholds. More species follow with the next version."
+            "species": "From the built-in list; sets watering style and default thresholds. Preselected when it matches the OpenPlantbook species."
           },
-          "description": "Step 1 of 3: name, species, room and soil sensor.",
+          "description": "Name, room and soil sensor.",
+          "title": "Plant"
+        },
+        "pick": {
+          "data": {
+            "pid": "Species"
+          },
+          "description": "{count} hits for “{query}”. Pick nothing to search again.",
+          "title": "Pick the species"
+        },
+        "pot": {
+          "data": {
+            "drainage": "Drainage hole",
+            "location": "Location",
+            "pot_diameter": "Pot diameter",
+            "pot_material": "Pot material",
+            "window": "Window direction"
+          },
+          "description": "Helps with the watering amount and later with light tips.",
+          "title": "Pot and location"
+        },
+        "ranges": {
+          "data": {
+            "air_humidity_max": "Air humidity maximum",
+            "air_humidity_min": "Air humidity minimum",
+            "conductivity_max": "Fertilizer level maximum",
+            "conductivity_min": "Fertilizer level minimum",
+            "illuminance_max": "Light maximum",
+            "illuminance_min": "Light minimum",
+            "temperature_max": "Temperature maximum",
+            "temperature_min": "Temperature minimum"
+          },
+          "description": "Suggested by OpenPlantbook or the built-in species list. Rootwise shows a hint when a value leaves its range; only the soil moisture raises a problem. Leave a field empty for no limit.",
+          "title": "Target ranges"
+        },
+        "reconfigure": {
+          "description": "What would you like to change?",
+          "menu_options": {
+            "basics": "Name, room, sensors and pot",
+            "search": "Species from OpenPlantbook (search or refresh)"
+          },
           "title": "Change plant"
+        },
+        "search": {
+          "data": {
+            "query": "Search for"
+          },
+          "description": "Scientific or common name, for example “Monstera” or “Ficus lyrata”.",
+          "title": "Search species"
         },
         "sensors": {
           "data": {
@@ -65,22 +103,15 @@
             "illuminance_sensor": "A lux sensor at the window. Several plants may share it. Rootwise turns it into the daily light amount (DLI) in a later version.",
             "temperature_sensor": "Best: the temperature of the soil sensor itself. Otherwise a room sensor near the plant."
           },
-          "description": "Step 2 of 3. Suggested from the soil sensor's device and the room. All fields are optional; remove what does not fit. Mirror sensors from Plant Monitor and Rootwise are not offered.",
+          "description": "Suggested from the soil sensor's device and the room. All fields are optional; remove what doesn't fit. Mirror sensors from Plant Monitor and Rootwise are not offered.",
           "title": "Further sensors"
         },
         "user": {
-          "data": {
-            "area": "Room",
-            "moisture_sensor": "Soil moisture sensor",
-            "name": "Name",
-            "species": "Species"
+          "description": "Find the species in OpenPlantbook: you get a picture, the German or English name and target ranges for temperature, air humidity and light.",
+          "menu_options": {
+            "basics": "Continue without OpenPlantbook",
+            "search": "Search OpenPlantbook"
           },
-          "data_description": {
-            "area": "Used to suggest room sensors in the next step.",
-            "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval. Mirror sensors (for example from Plant Monitor) are not offered: pick the real sensor, or the value disappears once Plant Monitor is gone.",
-            "species": "Sets watering style and default thresholds. More species follow with the next version."
-          },
-          "description": "Step 1 of 3: name, species, room and soil sensor.",
           "title": "Add plant"
         }
       }
