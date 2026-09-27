@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Rootwise – Pflanze anlegen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+__HEAD__
+<div class="rw" data-theme="{{theme}}" style="position: relative; width: 390px; height: 844px; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif">
+<header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 4px; background: var(--bar); border-bottom: 1px solid var(--line)">
+<a href="Main__SFX__.dc.html" aria-label="Abbrechen" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 24px">[[i:close]]</a>
+<div style="flex-grow: 1; font-size: 20px; font-weight: 500">Pflanze hinzufügen</div>
+<span class="num" style="padding: 0 12px; font-size: 13px; color: var(--muted)">{{elapsed}}</span>
+</header>
+<div style="padding: 14px 16px 0; display: flex; flex-direction: column; gap: 8px">
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="6"><div style="height: 5px; border-radius: 3px; background: {{b.bg}}"></div></sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--muted)"><span class="num">Schritt {{step}} von 6</span><span>{{stepName}}</span></div>
+</div>
+<main style="flex-grow: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<sc-if value="{{s1}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<h1 class="d" style="margin: 0; font-size: 26px; font-weight: 700; line-height: 1.15">Mach ein Foto der Pflanze</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.45; color: var(--text2)">Daraus schlägt Rootwise die Art vor. Das Foto wird verkleinert und ohne Standortdaten gespeichert.</p>
+<sc-if value="{{noPhoto}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<button type="button" onClick="{{takePhoto}}" style="min-height: 150px; border-radius: 18px; border: 0; background: var(--accent); color: var(--accent-ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 16px">[[i:camera:36]]Kamera<span style="font-size: 12px; font-weight: 400">Live-Bild, braucht HTTPS</span></button>
+<button type="button" onClick="{{takePhoto}}" style="min-height: 150px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 16px">[[i:image:36]]Galerie<span style="font-size: 12px; font-weight: 400; color: var(--muted)">geht immer</span></button>
+</div>
+</sc-if>
+<sc-if value="{{hasPhoto}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line)">
+<div style="width: 84px; height: 84px; flex-shrink: 0; border-radius: 14px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center">[[leaf:60]]</div>
+<div style="display: flex; flex-direction: column; gap: 4px"><strong>Foto aufgenommen</strong><span style="font-size: 13px; color: var(--text2)">1600 px · ohne GPS · wird hochgeladen</span><span style="font-size: 13px; color: var(--accent)">Art wird erkannt …</span></div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<h1 class="d" style="margin: 0; font-size: 26px; font-weight: 700">Welche Art ist es?</h1>
+<div role="radiogroup" aria-label="Artvorschläge" style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{species}}" as="sp" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{sp.on}}" onClick="{{sp.pick}}" style="min-height: 64px; padding: 10px 14px; border-radius: 16px; border: 2px solid {{sp.border}}; background: var(--surface); display: flex; align-items: center; gap: 12px; text-align: left">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 16px">{{sp.name}}</span><span style="font-size: 13px; color: var(--text2); font-style: italic">{{sp.sci}}</span></div>
+<span class="num" style="font-size: 15px; font-weight: 700">{{sp.score}}</span>
+</button>
+</sc-for>
+</div>
+<label for="rw-suche" style="font-size: 13px; color: var(--text2)">Andere Art suchen</label>
+<div style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface)">[[i:search:20]]<input id="rw-suche" type="text" placeholder="z. B. Philodendron" style="flex-grow: 1; min-width: 0; border: 0; background: none; min-height: 44px"></div>
+<div style="font-size: 12px; color: var(--muted)">Arterkennung powered by Pl@ntNet · du bestätigst immer selbst</div>
+</div>
+</sc-if>
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<h1 class="d" style="margin: 0; font-size: 26px; font-weight: 700">Name und Raum</h1>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rw-name" style="font-size: 13px; color: var(--text2)">Name</label>
+<input id="rw-name" type="text" value="Monstera" style="min-height: 52px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 17px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; color: var(--text2)">Raum</span>
+<div role="radiogroup" aria-label="Raum" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{areas}}" as="a" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{a.on}}" onClick="{{a.pick}}" style="min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid {{a.border}}; background: {{a.bg}}; font-weight: 700">{{a.label}}</button>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<h1 class="d" style="margin: 0; font-size: 26px; font-weight: 700">Sensoren im Wohnzimmer</h1>
+<p style="margin: 0; font-size: 14px; color: var(--text2)">Vorgeschlagen nach Raum und Messart. Noch nicht zugeordnete Geräte stehen oben.</p>
+<sc-for list="{{sensors}}" as="se" hint-placeholder-count="4">
+<button type="button" role="checkbox" aria-checked="{{se.on}}" onClick="{{se.toggle}}" style="min-height: 64px; padding: 10px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); display: flex; align-items: center; gap: 12px; text-align: left">
+<span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; border: 2px solid var(--accent); background: {{se.box}}; color: var(--accent-ink); display: flex; align-items: center; justify-content: center">[[i:check:16]]</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700">{{se.role}}</span><span style="font-size: 13px; color: var(--text2)">{{se.entity}}</span></div>
+<span class="num" style="font-weight: 700">{{se.value}}</span>
+</button>
+</sc-for>
+<div style="padding: 12px 14px; border-radius: 16px; border: 1px dashed var(--line); display: flex; align-items: center; gap: 10px">[[i:sun:20]]<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700">Licht: kein Sensor im Raum</span><span style="font-size: 13px; color: var(--muted)">Später hinzufügen. Rootwise zeigt dann keine erfundenen Werte.</span></div></div>
+</div>
+</sc-if>
+<sc-if value="{{s5}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<h1 class="d" style="margin: 0; font-size: 26px; font-weight: 700">Topf</h1>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; color: var(--text2)">Durchmesser</span>
+<div role="radiogroup" aria-label="Topfgröße" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{sizes}}" as="z" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{z.on}}" onClick="{{z.pick}}" style="min-height: 60px; border-radius: 14px; border: 1px solid {{z.border}}; background: {{z.bg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px"><strong>{{z.label}}</strong><span style="font-size: 11px; color: var(--muted)">{{z.hint}}</span></button>
+</sc-for>
+</div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; color: var(--text2)">Material</span>
+<div role="radiogroup" aria-label="Material" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{mats}}" as="m" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{m.on}}" onClick="{{m.pick}}" style="min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid {{m.border}}; background: {{m.bg}}; font-weight: 700">{{m.label}}</button>
+</sc-for>
+</div></div>
+<div style="padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center"><span><strong>Fenster und Standort</strong><br><span style="font-size: 13px; color: var(--text2)">West · drinnen · Tageslicht</span></span><span style="color: var(--muted)">[[i:down:20]]</span></div>
+</div>
+</sc-if>
+<sc-if value="{{s6}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="width: 64px; height: 64px; border-radius: 32px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center">[[i:check:34]]</div>
+<h1 class="d" style="margin: 0; font-size: 28px; font-weight: 700">Monstera ist angelegt</h1>
+<p class="num" style="margin: 0; font-size: 15px; color: var(--text2)">In 41 Sekunden. Wohnzimmer · 3 Sensoren · Topf 24 cm</p>
+<div style="padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; gap: 10px">[[i:sensor:22]]<span style="font-size: 14px; line-height: 1.45">Aus den letzten 90 Tagen deines Sensors hat Rootwise <strong>12 Gießungen</strong> gefunden. Die Prognose gilt ab sofort.</span></div>
+<a href="Kalibrierung__SFX__.dc.html" style="min-height: 56px; border-radius: 16px; border: 1px solid var(--water); background: var(--water-soft); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700">[[i:drop:20]]Gerade gegossen? Als „nass“ kalibrieren</a>
+<a href="Detail__SFX__.dc.html" style="min-height: 56px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-weight: 700">Zur Pflanze</a>
+</div>
+</sc-if>
+</main>
+<sc-if value="{{showNav}}" hint-placeholder-val="{{ true }}">
+<nav aria-label="Wizard-Navigation" style="flex-shrink: 0; padding: 12px 16px 20px; display: flex; gap: 10px; background: var(--bar); border-top: 1px solid var(--line)">
+<button type="button" onClick="{{back}}" style="min-height: 52px; padding: 0 18px; border-radius: 14px; border: 1px solid var(--line); background: none; font-weight: 700">Zurück</button>
+<button type="button" onClick="{{next}}" style="min-height: 52px; padding: 0 14px; border-radius: 14px; border: 0; background: none; color: var(--text2); font-weight: 700">Überspringen</button>
+<button type="button" onClick="{{next}}" style="flex-grow: 1; min-height: 52px; border-radius: 14px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 16px">Weiter</button>
+</nav>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"__THEME__","section":"Darstellung"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 1, photo: false, sp: 0, area: 'wz', size: 'L', mat: 'kunst', sens: { m: true, t: true, h: true, b: true } };
+  }
+  renderVals() {
+    const s = this.state;
+    const names = ['Foto', 'Art', 'Name und Raum', 'Sensoren', 'Topf', 'Fertig'];
+    const opt = (list, cur, key) => list.map(([id, label, hint]) => ({
+      label: label, hint: hint || '',
+      on: cur === id ? 'true' : 'false',
+      bg: cur === id ? 'var(--accent-soft)' : 'var(--surface)',
+      border: cur === id ? 'var(--accent)' : 'var(--line)',
+      pick: () => this.setState({ [key]: id })
+    }));
+    const spDefs = [['Monstera', 'Monstera deliciosa', '94 %'], ['Kleine Monstera', 'Monstera adansonii', '4 %'], ['Baum-Philodendron', 'Thaumatophyllum bipinnatifidum', '1 %']];
+    const species = spDefs.map(([name, sci, score], i) => ({
+      name: name, sci: sci, score: score,
+      on: s.sp === i ? 'true' : 'false',
+      border: s.sp === i ? 'var(--accent)' : 'var(--line)',
+      pick: () => this.setState({ sp: i })
+    }));
+    const sDefs = [
+      ['m', 'Bodenfeuchte', 'ThirdReality Bodenfeuchte · neu', '31 %'],
+      ['t', 'Temperatur', 'ThirdReality Bodenfeuchte · selbes Gerät', '22,4 °C'],
+      ['h', 'Luftfeuchte (Raum)', 'Temperatur/Luft Sensor Wohnzimmer', '48 %'],
+      ['b', 'Batterie', 'ThirdReality Bodenfeuchte', '87 %']
+    ];
+    const sensors = sDefs.map(([k, role, entity, value]) => ({
+      role: role, entity: entity, value: value,
+      on: s.sens[k] ? 'true' : 'false',
+      box: s.sens[k] ? 'var(--accent)' : 'transparent',
+      toggle: () => this.setState({ sens: Object.assign({}, s.sens, { [k]: !s.sens[k] }) })
+    }));
+    const step = s.step;
+    const secs = [0, 6, 14, 22, 31, 38, 41][step];
+    return {
+      theme: this.props.theme ?? '__THEME__',
+      step: step,
+      stepName: names[step - 1],
+      elapsed: '0:' + String(secs).padStart(2, '0'),
+      bars: [1, 2, 3, 4, 5, 6].map((i) => ({ bg: i <= step ? 'var(--accent)' : 'var(--line)' })),
+      s1: step === 1, s2: step === 2, s3: step === 3, s4: step === 4, s5: step === 5, s6: step === 6,
+      showNav: step < 6,
+      noPhoto: !s.photo, hasPhoto: s.photo,
+      takePhoto: () => this.setState({ photo: true }),
+      species: species,
+      areas: opt([['wz', 'Wohnzimmer'], ['ku', 'Küche'], ['sz', 'Schlafzimmer'], ['bad', 'Bad']], s.area, 'area'),
+      sensors: sensors,
+      sizes: opt([['S', 'S', 'unter 12 cm'], ['M', 'M', '12–18 cm'], ['L', 'L', '18–25 cm'], ['XL', 'XL', 'über 25 cm']], s.size, 'size'),
+      mats: opt([['kunst', 'Kunststoff'], ['terra', 'Terrakotta'], ['kera', 'Keramik glasiert'], ['selbst', 'Selbstbewässerung']], s.mat, 'mat'),
+      next: () => this.setState({ step: Math.min(6, step + 1), photo: step === 1 ? true : s.photo }),
+      back: () => this.setState({ step: Math.max(1, step - 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

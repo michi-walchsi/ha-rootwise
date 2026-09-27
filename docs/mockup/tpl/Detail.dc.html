@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Rootwise – Monstera</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+__HEAD__
+<div class="rw" data-theme="{{theme}}" style="position: relative; width: 390px; height: 2230px; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif">
+<header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 4px; background: var(--bar); border-bottom: 1px solid var(--line)">
+<a href="Main__SFX__.dc.html" aria-label="Zurück zur Übersicht" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 24px">[[i:back]]</a>
+<div style="flex-grow: 1; font-size: 20px; font-weight: 500">Monstera</div>
+<a href="Kalibrierung__SFX__.dc.html" aria-label="Kalibrieren und Einstellungen" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 24px">[[i:tune]]</a>
+</header>
+<main style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 32px">
+<div style="position: relative; height: 210px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft)">
+[[leaf:150]]
+<span style="position: absolute; right: 12px; bottom: 12px; padding: 5px 10px; border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text2)">Titelfoto · 21.09.</span>
+</div>
+<div style="padding: 0 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div class="cap">Wohnzimmer · Fenster West</div>
+<h1 class="d" style="margin: 0; font-size: 34px; line-height: 1; font-weight: 750">Monstera</h1>
+<div style="font-size: 14px; color: var(--text2)">Monstera deliciosa · Fensterblatt · Topf 24 cm, Kunststoff</div>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px">
+<span style="display: flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border-radius: 999px; background: var(--accent-soft); font-size: 13px; font-weight: 700"><span style="width: 9px; height: 9px; border-radius: 5px; background: var(--accent)"></span>Alles gut</span>
+<span style="font-size: 13px; color: var(--text2)">Bodenfeuchte 38 %, im grünen Bereich (15–80 %)</span>
+</div>
+</div>
+<section aria-label="Nächstes Gießen" style="background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div class="cap" style="display: flex; align-items: center; gap: 6px; color: var(--water)">[[i:drop:16]]<span style="color: var(--muted)">Nächstes Gießen</span></div>
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap">
+<div class="d num" style="font-size: 32px; font-weight: 750; line-height: 1">{{nextBig}}</div>
+<div style="font-size: 15px; color: var(--text2)">{{nextDate}}</div>
+</div>
+<div style="font-size: 14px; color: var(--text2)">Fenster: Di 29.09. abends bis Do 01.10. morgens</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<span style="padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px">Mittlere Sicherheit · aus 4 Zyklen</span>
+<span style="padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px">Menge ca. 1,5–2 l</span>
+</div>
+<div style="font-size: 13px; line-height: 1.45; color: var(--muted)">Durchdringend gießen, bis unten Wasser austritt. Untersetzer nach 15 Minuten leeren.</div>
+</section>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button type="button" onClick="{{doWater}}" style="min-height: 76px; border-radius: 16px; border: 0; background: var(--water); color: var(--water-ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 700">[[i:drop:24]]Gegossen</button>
+<button type="button" onClick="{{doFert}}" style="min-height: 76px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 700">[[i:fert:24]]Gedüngt</button>
+<a href="Fotocheck__SFX__.dc.html" style="min-height: 76px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 700">[[i:camera:24]]Foto</a>
+<button type="button" onClick="{{doSnooze}}" style="min-height: 76px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 700">[[i:clock:24]]+1 Tag</button>
+</div>
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 14px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--line)">
+<span style="font-size: 14px">{{toast}}</span>
+<button type="button" onClick="{{undo}}" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 0; background: none; color: var(--accent); font-weight: 700">Rückgängig</button>
+</div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 6px; color: var(--water)">[[i:drop:18]]<span style="font-size: 13px; color: var(--text2)">Bodenfeuchte</span></div>
+<div class="d num" style="font-size: 24px; font-weight: 700">38 %</div>
+<div aria-hidden="true" style="position: relative; height: 6px; border-radius: 3px; background: var(--surface2)"><div style="position: absolute; left: 15%; width: 65%; top: 0; bottom: 0; background: var(--accent-soft); border-radius: 3px"></div><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 38%; background: var(--water); border-radius: 3px"></div></div>
+<div style="font-size: 12px; color: var(--muted)">roh 31 % · kalibriert</div>
+</div>
+<div style="background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 6px; color: var(--text2)">[[i:thermo:18]]<span style="font-size: 13px">Temperatur</span></div>
+<div class="d num" style="font-size: 24px; font-weight: 700">22,4 °C</div>
+<div style="font-size: 12px; color: var(--muted)">Pflanzensensor · Ziel 18–27 °C</div>
+</div>
+<div style="background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 6px; color: var(--text2)">[[i:air:18]]<span style="font-size: 13px">Luftfeuchte</span></div>
+<div class="d num" style="font-size: 24px; font-weight: 700">48 %</div>
+<div style="font-size: 12px; color: var(--muted)">Raum Wohnzimmer · Ziel ab 50 %</div>
+</div>
+<div style="background: var(--surface); border: 1px dashed var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 6px; color: var(--text2)">[[i:sun:18]]<span style="font-size: 13px">Licht</span></div>
+<div style="font-size: 15px; font-weight: 700">Kein Lichtsensor</div>
+<div style="font-size: 12px; line-height: 1.4; color: var(--muted)">Fenster West reicht der Art meist. Ein Lux-Sensor pro Fenster zeigt es genau.</div>
+</div>
+</div>
+<section aria-label="Bodenfeuchte-Verlauf" style="background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<h2 class="d" style="margin: 0; font-size: 18px; font-weight: 650">Bodenfeuchte</h2>
+<div role="group" aria-label="Zeitraum" style="display: flex; gap: 3px; padding: 3px; border-radius: 12px; background: var(--surface2)">
+<button type="button" onClick="{{set14}}" aria-pressed="{{is14}}" style="min-height: 38px; min-width: 56px; border: 0; border-radius: 9px; background: {{bg14}}; font-size: 13px; font-weight: 700">14 Tage</button>
+<button type="button" onClick="{{set30}}" aria-pressed="{{is30}}" style="min-height: 38px; min-width: 56px; border: 0; border-radius: 9px; background: {{bg30}}; font-size: 13px; font-weight: 700">30 Tage</button>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--text2)">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 16px; height: 2px; background: var(--accent)"></span>Messwert in %</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 10px; background: var(--accent-soft); border: 1px dashed var(--accent)"></span>Soll 15–80 %</span>
+<span style="display: flex; align-items: center; gap: 4px; color: var(--water)">[[i:drop:14]]<span style="color: var(--text2)">gegossen</span></span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 16px; height: 0; border-top: 2px dashed var(--accent)"></span>Prognose</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 10px; background: var(--water-soft)"></span>Gießfenster</span>
+</div>
+<div style="position: relative; width: 326px; height: 190px">
+<span class="num" style="position: absolute; left: 0; top: 15px; width: 22px; text-align: right; font-size: 11px; color: var(--muted)">100</span>
+<span class="num" style="position: absolute; left: 0; top: 43px; width: 22px; text-align: right; font-size: 11px; color: var(--muted)">80</span>
+<span class="num" style="position: absolute; left: 0; top: 132px; width: 22px; text-align: right; font-size: 11px; color: var(--muted)">15</span>
+<span class="num" style="position: absolute; left: 0; top: 153px; width: 22px; text-align: right; font-size: 11px; color: var(--muted)">0</span>
+<svg viewBox="0 0 300 150" width="300" height="150" role="img" aria-label="{{chartAria}}" style="position: absolute; left: 26px; top: 16px; overflow: visible">
+<line x1="0" y1="6" x2="300" y2="6" style="stroke: var(--line); stroke-width: 1"></line>
+<line x1="0" y1="75" x2="300" y2="75" style="stroke: var(--line); stroke-width: 1"></line>
+<line x1="0" y1="144" x2="300" y2="144" style="stroke: var(--line); stroke-width: 1"></line>
+<rect x="0" y="33.6" width="300" height="89.7" style="fill: var(--accent); fill-opacity: 0.1"></rect>
+<line x1="0" y1="33.6" x2="300" y2="33.6" style="stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7"></line>
+<line x1="0" y1="123.3" x2="300" y2="123.3" style="stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7"></line>
+<rect x="{{winX}}" y="0" width="{{winW}}" height="144" style="fill: var(--water); fill-opacity: 0.16"></rect>
+<rect x="{{selX}}" y="0" width="{{selW}}" height="144" style="fill: var(--text); fill-opacity: 0.08"></rect>
+<line x1="{{nowX}}" y1="0" x2="{{nowX}}" y2="144" style="stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3"></line>
+<polyline points="{{pts}}" style="fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round"></polyline>
+<line x1="{{nowX}}" y1="{{nowY}}" x2="{{fX}}" y2="123.3" style="stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 4"></line>
+<circle cx="{{nowX}}" cy="{{nowY}}" r="4.5" style="fill: var(--accent); stroke: var(--surface); stroke-width: 2"></circle>
+<circle cx="{{fX}}" cy="123.3" r="4" style="fill: var(--surface); stroke: var(--accent); stroke-width: 2"></circle>
+</svg>
+<sc-for list="{{marks}}" as="m" hint-placeholder-count="2">
+<div aria-hidden="true" style="position: absolute; top: 22px; left: {{m.left}}; width: 2px; height: 138px; background: var(--water); opacity: 0.5"></div>
+<div aria-hidden="true" style="position: absolute; top: 0; left: {{m.iconLeft}}; color: var(--water)">[[i:dropfill:16]]</div>
+</sc-for>
+<span style="position: absolute; top: 0; left: {{nowLabelLeft}}; width: 40px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text2)">jetzt</span>
+<sc-for list="{{ticks}}" as="t" hint-placeholder-count="8">
+<span class="num" style="position: absolute; top: 172px; left: {{t.left}}; width: 36px; text-align: center; font-size: 11px; color: var(--muted)">{{t.label}}</span>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding-top: 6px; border-top: 1px solid var(--line)">
+<button type="button" onClick="{{prevDay}}" aria-label="Vorheriger Tag" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; border: 1px solid var(--line); background: none; display: flex; align-items: center; justify-content: center">[[i:back:20]]</button>
+<div role="status" style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<div class="num" style="font-size: 14px; font-weight: 700">{{readTitle}}</div>
+<div class="num" style="font-size: 13px; line-height: 1.35; color: var(--text2)">{{readLine}}</div>
+</div>
+<button type="button" onClick="{{nextDay}}" aria-label="Nächster Tag" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; border: 1px solid var(--line); background: none; display: flex; align-items: center; justify-content: center">[[i:fwd:20]]</button>
+</div>
+</section>
+<section aria-label="Tipps" style="background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden">
+<h2 class="d" style="margin: 0; padding: 14px 16px 8px; font-size: 18px; font-weight: 650">Tipps</h2>
+<sc-for list="{{tips}}" as="t" hint-placeholder-count="3">
+<div style="padding: 12px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: flex-start; gap: 10px">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 15px; font-weight: 700; line-height: 1.3">{{t.title}}</div>
+<span style="align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: {{t.srcBg}}; font-size: 11px; font-weight: 700; color: var(--text2)">{{t.src}}</span>
+</div>
+<button type="button" onClick="{{t.toggle}}" aria-expanded="{{t.open}}" style="min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: none; font-size: 13px; font-weight: 700; flex-shrink: 0">Warum?</button>
+</div>
+<sc-if value="{{t.isOpen}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 14px; line-height: 1.45; color: var(--text2)">{{t.why}}</div>
+</sc-if>
+</div>
+</sc-for>
+</section>
+<a href="Fotocheck__SFX__.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; min-height: 76px">
+<div style="width: 56px; height: 56px; flex-shrink: 0; border-radius: 12px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center">[[leaf:40]]</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<div class="cap">Gesundheit laut Foto</div>
+<div style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 5px; background: var(--warn)"></span>Leichte Auffälligkeiten</div>
+<div style="font-size: 12px; color: var(--muted)">heute 10:14 · per Cloud (Gemini) · KI-Einschätzung</div>
+</div>
+<span style="color: var(--muted)">[[i:fwd:20]]</span>
+</a>
+<section aria-label="Artinfo" style="background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<h2 class="d" style="margin: 0; font-size: 18px; font-weight: 650">Artinfo</h2>
+<dl style="margin: 0; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; font-size: 14px">
+<dt style="color: var(--muted)">Gießen</dt><dd style="margin: 0">Oben 3–5 cm antrocknen lassen, dann gründlich</dd>
+<dt style="color: var(--muted)">Licht</dt><dd style="margin: 0">Hell, keine pralle Mittagssonne · 6–12 mol/m² am Tag</dd>
+<dt style="color: var(--muted)">Temperatur</dt><dd style="margin: 0">18–27 °C, nicht unter 12 °C</dd>
+<dt style="color: var(--muted)">Luftfeuchte</dt><dd style="margin: 0">ab 50 %</dd>
+<dt style="color: var(--muted)">Düngen</dt><dd style="margin: 0">März bis September alle 2–3 Wochen</dd>
+</dl>
+<div style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line)">
+<div class="cap">Giftigkeit</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 12px; background: var(--warn-soft); font-size: 13px; font-weight: 700">[[i:cat:18]]Katzen: reizend</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 12px; background: var(--warn-soft); font-size: 13px; font-weight: 700">[[i:dog:18]]Hunde: reizend</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 12px; background: var(--warn-soft); font-size: 13px; font-weight: 700">[[i:child:18]]Kinder: reizend</span>
+</div>
+<div style="font-size: 12px; line-height: 1.45; color: var(--muted)">Enthält Calciumoxalat. Richtwerte nach ASPCA. Im Notfall: Vergiftungsinformationszentrale +43 1 406 43 43 oder Tierarzt.</div>
+</div>
+</section>
+<section aria-label="Verlauf" style="background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden">
+<h2 class="d" style="margin: 0; padding: 14px 16px 8px; font-size: 18px; font-weight: 650">Verlauf</h2>
+<sc-for list="{{journal}}" as="j" hint-placeholder-count="5">
+<div style="display: flex; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); align-items: baseline">
+<div class="num" style="width: 64px; flex-shrink: 0; font-size: 13px; color: var(--muted)">{{j.when}}</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 14px; font-weight: 700">{{j.what}}</div>
+<div style="font-size: 13px; color: var(--text2)">{{j.detail}}</div>
+</div>
+</div>
+</sc-for>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"__THEME__","section":"Darstellung"},"$preview":{"width":390,"height":2230}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { range: 14, sel: 30, toast: '', snoozed: false, open: -1 };
+  }
+  renderVals() {
+    const s = this.state;
+    const W = 300, NOW = 730, END = 840;
+    const start = s.range === 14 ? 408 : 0;
+    const span = END - start;
+    const X = (h) => (h - start) / span * W;
+    const Y = (v) => 6 + (100 - v) / 100 * 138;
+    const WAT = [
+      { h: 80.5, fc: 86, r: 9.1, src: 'manuell eingetragen', rise: 67 },
+      { h: 259.2, fc: 86, r: 10.1, src: 'manuell eingetragen', rise: 66 },
+      { h: 415.5, fc: 85, r: 10.49, src: 'automatisch erkannt', rise: 70 },
+      { h: 584.7, fc: 84, r: 7.7, src: 'per Push „Gegossen ✓“', rise: 73 }
+    ];
+    const val = (h) => {
+      let w = null;
+      for (const x of WAT) { if (x.h <= h) w = x; }
+      let m;
+      if (!w) { m = 50 - 9.3 * h / 24; }
+      else { const t = h - w.h; m = w.fc - w.r * t / 24 + 7 * Math.exp(-t / 1.5); }
+      m += 1.2 * Math.sin(2 * Math.PI * ((h % 24) - 9) / 24);
+      return Math.max(0, Math.min(100, Math.round(m)));
+    };
+    const pts = [];
+    for (let h = start; h <= NOW; h++) { pts.push(X(h).toFixed(1) + ',' + Y(val(h)).toFixed(1)); }
+    const nowV = val(NOW);
+    const hitH = NOW + (nowV - 15) / 7.7 * 24;
+    const winA = NOW + (nowV - 15) / 7.7 * 24 * 0.8;
+    const winB = NOW + (nowV - 15) / 7.7 * 24 * 1.3;
+    const px = (v) => v.toFixed(1) + 'px';
+    const marks = WAT.filter((w) => w.h >= start).map((w) => ({ left: px(26 + X(w.h) - 1), iconLeft: px(26 + X(w.h) - 8) }));
+    const wd = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const dname = (d) => {
+      const w = wd[((d - 30) % 7 + 7) % 7];
+      let dt;
+      if (d < 4) dt = (28 + d) + '.08.';
+      else if (d < 34) dt = String(d - 3).padStart(2, '0') + '.09.';
+      else dt = String(d - 33).padStart(2, '0') + '.10.';
+      return { w: w, dt: dt };
+    };
+    const ticks = [];
+    const step = s.range === 14 ? 2 : 7;
+    for (let d = start / 24; d < 35; d += step) {
+      const n = dname(d);
+      const x = X(d * 24);
+      if (x > W - 10) continue;
+      const short = d < 4 ? (28 + d) + '.8.' : (d < 34 ? (d - 3) + '.9.' : (d - 33) + '.10.');
+      ticks.push({ left: px(26 + x - 18), label: short });
+    }
+    const minDay = start / 24;
+    const sel = Math.max(minDay, Math.min(34, s.sel));
+    const n = dname(sel);
+    let readTitle = n.w + ' ' + n.dt;
+    let readLine;
+    if (sel <= 30) {
+      const hs = [];
+      const last = sel === 30 ? NOW : sel * 24 + 23;
+      for (let h = sel * 24; h <= last; h++) hs.push(val(h));
+      const mean = Math.round(hs.reduce((a, b) => a + b, 0) / hs.length);
+      const ev = WAT.filter((w) => Math.floor(w.h / 24) === sel);
+      if (sel === 30) readTitle += ' · heute';
+      readLine = 'Ø ' + mean + ' % · min ' + Math.min(...hs) + ' · max ' + Math.max(...hs) + (sel === 30 ? ' · jetzt ' + nowV + ' %' : '');
+      if (ev.length) {
+        const e = ev[0];
+        const hh = Math.floor(e.h % 24), mm = Math.round((e.h % 1) * 60);
+        readLine += ' · gegossen ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ', ' + e.src + ', +' + e.rise + ' Punkte';
+      }
+    } else {
+      const noon = sel * 24 + 12;
+      const f = Math.max(15, Math.round(nowV - (noon - NOW) / 24 * 7.7));
+      readTitle += ' · Prognose';
+      if (sel === 31) readLine = 'etwa ' + f + ' %, noch kein Gießen nötig';
+      else if (sel === 32) readLine = 'etwa ' + f + ' %, ab abends im Gießfenster';
+      else if (sel === 33) readLine = 'Schwelle 15 % wird vormittags erreicht: gießen';
+      else readLine = 'Ende des Fensters: spätestens morgens gießen';
+    }
+    const tipsDef = [
+      { title: 'Beim nächsten Mal durchdringend gießen', src: 'Regel', ai: false, why: 'Die Monstera mag es, wenn die oberen 3–5 cm antrocknen, dann aber gründlich. Am 20.09. lag die Erde 9 Stunden unter der Gieß-Schwelle.' },
+      { title: 'Einmal noch düngen, dann Pause bis März', src: 'Regel', ai: false, why: 'Letzte Gabe am 02.08. Die Wachstumsphase endet im September.' },
+      { title: 'Große Blätter feucht abwischen', src: 'Foto-Check 27.09. · KI', ai: true, why: 'Auf dem Foto wirken die oberen Blätter matt. Staub nimmt Licht weg. Zuletzt gereinigt vor 7 Wochen.' }
+    ];
+    const tips = tipsDef.map((t, i) => ({
+      title: t.title, src: t.src, why: t.why,
+      srcBg: t.ai ? 'var(--prob-soft)' : 'var(--surface2)',
+      open: s.open === i ? 'true' : 'false',
+      isOpen: s.open === i,
+      toggle: () => this.setState({ open: s.open === i ? -1 : i })
+    }));
+    const days = Math.round((hitH - NOW) / 24);
+    return {
+      theme: this.props.theme ?? '__THEME__',
+      nextBig: s.snoozed ? 'in ' + (days + 1) + ' Tagen' : 'in ' + days + ' Tagen',
+      nextDate: s.snoozed ? 'Do 01.10. · um 1 Tag verschoben' : 'Mi 30.09., vormittags',
+      pts: pts.join(' '),
+      nowX: X(NOW).toFixed(1),
+      nowY: Y(nowV).toFixed(1),
+      fX: X(hitH).toFixed(1),
+      winX: X(winA).toFixed(1),
+      winW: (X(winB) - X(winA)).toFixed(1),
+      selX: X(sel * 24).toFixed(1),
+      selW: (X(sel * 24 + 24) - X(sel * 24)).toFixed(1),
+      nowLabelLeft: px(26 + X(NOW) - 20),
+      marks: marks,
+      ticks: ticks,
+      readTitle: readTitle,
+      readLine: readLine,
+      chartAria: 'Bodenfeuchte der letzten ' + s.range + ' Tage. Jetzt ' + nowV + ' Prozent. Gegossen am 14.09. und 21.09. Prognose: gießen am Mittwoch, 30.09.',
+      is14: s.range === 14 ? 'true' : 'false',
+      is30: s.range === 30 ? 'true' : 'false',
+      bg14: s.range === 14 ? 'var(--surface)' : 'transparent',
+      bg30: s.range === 30 ? 'var(--surface)' : 'transparent',
+      set14: () => this.setState({ range: 14, sel: Math.max(17, s.sel) }),
+      set30: () => this.setState({ range: 30 }),
+      prevDay: () => this.setState({ sel: Math.max(minDay, sel - 1) }),
+      nextDay: () => this.setState({ sel: Math.min(34, sel + 1) }),
+      hasToast: s.toast !== '',
+      toast: s.toast,
+      doWater: () => this.setState({ toast: 'Gegossen um 10:12 eingetragen.' }),
+      doFert: () => this.setState({ toast: 'Gedüngt um 10:12 eingetragen. Nächstes Mal: März.' }),
+      doSnooze: () => this.setState({ toast: 'Erinnerung um 1 Tag verschoben.', snoozed: true }),
+      undo: () => this.setState({ toast: '', snoozed: false }),
+      tips: tips,
+      journal: [
+        { when: 'heute', what: 'Foto-Check', detail: 'Leichte Auffälligkeiten · 3 Tipps' },
+        { when: '21.09.', what: 'Gegossen', detail: 'per Push „Gegossen ✓“ um 08:40' },
+        { when: '14.09.', what: 'Gegossen', detail: 'automatisch erkannt · +70 Punkte' },
+        { when: '07.09.', what: 'Gegossen', detail: 'manuell eingetragen' },
+        { when: '02.08.', what: 'Gedüngt', detail: 'Flüssigdünger, halbe Dosis' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

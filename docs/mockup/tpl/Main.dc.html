@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Rootwise – Übersicht</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+__HEAD__
+<div class="rw" data-theme="{{theme}}" style="position: relative; width: 390px; height: 1180px; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif">
+<header style="height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; padding: 0 4px; background: var(--bar); border-bottom: 1px solid var(--line)">
+<button type="button" aria-label="Seitenleiste öffnen" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 24px">[[i:menu]]</button>
+<div style="flex-grow: 1; font-size: 20px; font-weight: 500">Pflanzen</div>
+<a href="Push__SFX__.dc.html" aria-label="Benachrichtigungen ansehen" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 24px">[[i:bell]]</a>
+</header>
+<main style="flex-grow: 1; overflow-y: auto; padding: 20px 16px 120px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 14px; color: var(--muted)">Sonntag, 27. September</div>
+<h1 class="d" style="margin: 0; font-size: 30px; line-height: 1.08; font-weight: 700; text-wrap: balance">{{headline}}</h1>
+</div>
+<section aria-label="Heute gießen" style="background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 10px">
+<div style="display: flex; align-items: center; gap: 8px; color: var(--water)">[[i:drop:20]]<h2 class="d" style="margin: 0; font-size: 18px; font-weight: 650; color: var(--text)">Heute gießen</h2></div>
+<span class="num" style="font-size: 13px; color: var(--text2)">{{remainingLabel}}</span>
+</div>
+<sc-for list="{{due}}" as="p" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line)">
+<button type="button" onClick="{{p.toggle}}" aria-label="{{p.aria}}" aria-pressed="{{p.done}}" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 22px; border: 2px solid var(--water); background: {{p.btnBg}}; color: {{p.btnInk}}; display: flex; align-items: center; justify-content: center">[[i:check:22]]</button>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<div style="font-weight: 700; font-size: 16px">{{p.name}}</div>
+<div style="font-size: 13px; line-height: 1.35; color: var(--text2)">{{p.line}}</div>
+</div>
+<div class="num" style="font-size: 13px; color: var(--text2); text-align: right; white-space: nowrap">{{p.amount}}</div>
+</div>
+</sc-for>
+<sc-if value="{{anyLeft}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 10px 16px 16px; border-top: 1px solid var(--line)">
+<button type="button" onClick="{{allDone}}" style="width: 100%; min-height: 48px; border-radius: 14px; border: 1px solid var(--water); background: var(--water-soft); color: var(--text); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">[[i:check:20]]Alle gegossen</button>
+</div>
+</sc-if>
+<sc-if value="{{noneLeft}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 12px 16px 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--text2)">Erledigt. Als Nächstes ist die Monstera dran: Mi 30.09.</div>
+</sc-if>
+</section>
+<div role="group" aria-label="Nach Raum oder Status filtern" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="5">
+<button type="button" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="flex-shrink: 0; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid {{c.border}}; background: {{c.bg}}; color: var(--text); font-size: 14px; font-weight: 700">{{c.label}}</button>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{tiles}}" as="t" hint-placeholder-count="6">
+<a href="Detail__SFX__.dc.html" aria-label="{{t.aria}}" style="display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden">
+<div style="position: relative; height: 100px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft)">
+[[leaf:78]]
+<span style="position: absolute; left: 8px; top: 8px; display: flex; align-items: center; gap: 6px; padding: 4px 9px 4px 7px; border-radius: 999px; background: var(--surface); font-size: 12px; font-weight: 700"><span style="width: 9px; height: 9px; border-radius: 5px; background: {{t.color}}"></span>{{t.status}}</span>
+</div>
+<div style="padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; flex-direction: column; gap: 1px">
+<div class="d" style="font-size: 17px; font-weight: 650">{{t.name}}</div>
+<div style="font-size: 12px; color: var(--muted)">{{t.room}}</div>
+</div>
+<sc-if value="{{t.hasSensor}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; gap: 8px">
+<div aria-hidden="true" style="position: relative; flex-grow: 1; height: 8px; border-radius: 4px; background: var(--surface2)">
+<div style="position: absolute; left: 15%; width: 65%; top: 0; bottom: 0; border-radius: 4px; background: var(--accent-soft)"></div>
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{t.pctCss}}; border-radius: 4px; background: {{t.barColor}}"></div>
+</div>
+<span class="num" style="font-size: 13px; font-weight: 700">{{t.pctLabel}}</span>
+</div>
+</sc-if>
+<sc-if value="{{t.noSensor}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px; color: var(--muted); min-height: 16px">ohne Sensor · lernt aus deinen Einträgen</div>
+</sc-if>
+<div style="font-size: 13px; font-weight: 700">{{t.next}}</div>
+</div>
+</a>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: var(--muted)">Beispielpflanzen außer der Monstera. Tippen öffnet die Detailseite (am Beispiel Monstera).</div>
+</main>
+<nav aria-label="Aktionen" style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 20px; display: flex; gap: 12px; background: var(--bar); border-top: 1px solid var(--line)">
+<a href="Wizard__SFX__.dc.html" style="flex-grow: 1; min-height: 56px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface2); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700">[[i:plus:20]]Pflanze</a>
+<a href="Fotocheck__SFX__.dc.html" style="flex-grow: 2; min-height: 56px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 17px">[[i:camera:24]]Foto prüfen</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"__THEME__","section":"Darstellung"},"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cal: false, efe: false, filter: 'all' };
+  }
+  renderVals() {
+    const s = this.state;
+    const left = (s.cal ? 0 : 1) + (s.efe ? 0 : 1);
+    const mk = (id, name, line, amount) => {
+      const done = s[id];
+      return {
+        name: name,
+        line: done ? 'Eingetragen um 10:12 · erneut tippen macht es rückgängig' : line,
+        amount: done ? '' : amount,
+        done: done ? 'true' : 'false',
+        aria: done ? name + ': Eintrag zurücknehmen' : name + ' als gegossen eintragen',
+        btnBg: done ? 'var(--water)' : 'transparent',
+        btnInk: done ? 'var(--water-ink)' : 'var(--water)',
+        toggle: () => this.setState({ [id]: !done })
+      };
+    };
+    const due = [
+      mk('cal', 'Calathea', 'Schlafzimmer · Bodenfeuchte 11 % seit 6 h', 'ca. 300 ml'),
+      mk('efe', 'Efeutute', 'Küche · ohne Sensor · zuletzt vor 7 Tagen', 'ca. 200 ml')
+    ];
+    const ST = {
+      ok: { label: 'Alles gut', color: 'var(--accent)' },
+      thirsty: { label: 'Durstig', color: 'var(--warn)' },
+      due: { label: 'Fällig', color: 'var(--warn)' },
+      dark: { label: 'Zu dunkel', color: 'var(--prob)' }
+    };
+    const raw = [
+      { name: 'Monstera', room: 'Wohnzimmer', area: 'wz', st: 'ok', pct: 38, next: 'Gießen in 3 Tagen' },
+      { name: 'Calathea', room: 'Schlafzimmer', area: 'sz', st: s.cal ? 'ok' : 'thirsty', pct: s.cal ? 88 : 11, next: s.cal ? 'Gerade gegossen' : 'Heute gießen' },
+      { name: 'Efeutute', room: 'Küche', area: 'ku', st: s.efe ? 'ok' : 'due', pct: null, next: s.efe ? 'Gerade gegossen' : 'Heute fällig' },
+      { name: 'Geigenfeige', room: 'Wohnzimmer', area: 'wz', st: 'dark', pct: 52, next: 'Gießen in 5 Tagen' },
+      { name: 'Zamioculcas', room: 'Schlafzimmer', area: 'sz', st: 'ok', pct: 24, next: 'Gießen in 11 Tagen' },
+      { name: 'Bogenhanf', room: 'Wohnzimmer', area: 'wz', st: 'ok', pct: null, next: 'Gießen in 16 Tagen' }
+    ];
+    const f = s.filter;
+    const tiles = raw
+      .filter((p) => f === 'all' || (f === 'prob' ? p.st !== 'ok' : p.area === f))
+      .map((p) => {
+        const st = ST[p.st];
+        const has = p.pct !== null;
+        return {
+          name: p.name,
+          room: p.room,
+          status: st.label,
+          color: st.color,
+          next: p.next,
+          hasSensor: has,
+          noSensor: !has,
+          pctCss: has ? p.pct + '%' : '0%',
+          pctLabel: has ? p.pct + ' %' : '',
+          barColor: p.st === 'thirsty' ? 'var(--warn)' : 'var(--water)',
+          aria: p.name + ', ' + p.room + ', ' + st.label + ', ' + p.next
+        };
+      });
+    const chipDefs = [['all', 'Alle'], ['wz', 'Wohnzimmer'], ['sz', 'Schlafzimmer'], ['ku', 'Küche'], ['prob', 'Braucht Aufmerksamkeit']];
+    const chips = chipDefs.map(([id, label]) => ({
+      label: label,
+      on: f === id ? 'true' : 'false',
+      bg: f === id ? 'var(--accent-soft)' : 'var(--surface)',
+      border: f === id ? 'var(--accent)' : 'var(--line)',
+      pick: () => this.setState({ filter: id })
+    }));
+    return {
+      theme: this.props.theme ?? '__THEME__',
+      headline: left === 0 ? 'Heute ist alles gegossen' : (left === 1 ? '1 Pflanze braucht heute Wasser' : left + ' Pflanzen brauchen heute Wasser'),
+      remainingLabel: left === 0 ? 'erledigt' : 'noch ' + left,
+      anyLeft: left > 0,
+      noneLeft: left === 0,
+      allDone: () => this.setState({ cal: true, efe: true }),
+      due: due,
+      chips: chips,
+      tiles: tiles
+    };
+  }
+}
+</script>
+</body>
+</html>

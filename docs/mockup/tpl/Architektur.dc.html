@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Rootwise – Architektur</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+__HEAD__
+<div class="rw" data-theme="{{theme}}" style="width: 1280px; height: 900px; overflow: hidden; padding: 36px 40px; display: flex; flex-direction: column; gap: 18px; background: var(--bg); color: var(--text); font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 24px">
+<h1 class="d" style="margin: 0; font-size: 34px; font-weight: 750">Wie Rootwise in Home Assistant sitzt</h1>
+<span style="font-size: 14px; color: var(--muted)">PLAN v1 · Stand 27.09.2026</span>
+</div>
+<figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+<svg viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Sensoren melden an Home Assistant; Rootwise liest Ereignisse und Langzeitstatistik, rechnet in reinem Python, speichert in zwei Stores und schreibt Entities nur bei Änderung. Fotos gehen über die Home-Assistant-Integration Google Gemini als AI Task in die Cloud, nur mit Opt-in. Das Handy spricht über WebSocket und Push mit Einmal-Code." style="display: block; max-width: 100%; height: auto">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill: var(--text2)"></path></marker>
+<marker id="aa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill: var(--accent)"></path></marker>
+</defs>
+<text x="20" y="54" style="fill: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .06em">SENSOREN</text>
+<rect x="20" y="70" width="190" height="56" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="34" y="94" style="fill: var(--text); font-size: 13px; font-weight: 700">Bodenfeuchte</text>
+<text x="34" y="112" style="fill: var(--muted); font-size: 11px">ThirdReality · Zigbee2MQTT</text>
+<rect x="20" y="146" width="190" height="56" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="34" y="170" style="fill: var(--text); font-size: 13px; font-weight: 700">Lux pro Fenster</text>
+<text x="34" y="188" style="fill: var(--muted); font-size: 11px">von mehreren Pflanzen geteilt</text>
+<rect x="20" y="222" width="190" height="56" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="34" y="246" style="fill: var(--text); font-size: 13px; font-weight: 700">Raumklima der Area</text>
+<text x="34" y="264" style="fill: var(--muted); font-size: 11px">Temperatur · Luftfeuchte</text>
+<polyline points="210,98 236,98 236,250 210,250" style="fill: none; stroke: var(--text2); stroke-width: 1.5"></polyline>
+<line x1="210" y1="174" x2="236" y2="174" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<line x1="236" y1="105" x2="260" y2="105" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="236" y="296" text-anchor="middle" style="fill: var(--text2); font-size: 11px">Messwerte</text>
+<rect x="250" y="20" width="640" height="600" rx="18" style="fill: var(--surface2); stroke: var(--line)"></rect>
+<text x="270" y="46" style="fill: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .06em">HOME ASSISTANT · RASPBERRY PI 4</text>
+<rect x="262" y="70" width="190" height="72" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="276" y="96" style="fill: var(--text); font-size: 13px; font-weight: 700">Zustände + Recorder</text>
+<text x="276" y="114" style="fill: var(--muted); font-size: 11px">10 Tage roh</text>
+<text x="276" y="130" style="fill: var(--muted); font-size: 11px">Langzeitstatistik unbegrenzt</text>
+<rect x="262" y="380" width="190" height="50" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="276" y="401" style="fill: var(--text); font-size: 13px; font-weight: 700">/media/rootwise</text>
+<text x="276" y="418" style="fill: var(--muted); font-size: 11px">Fotos ohne EXIF und GPS</text>
+<rect x="262" y="480" width="190" height="60" rx="10" style="fill: var(--surface); stroke: var(--accent); stroke-width: 1.5"></rect>
+<text x="276" y="504" style="fill: var(--text); font-size: 13px; font-weight: 700">Integration Google Gemini</text>
+<text x="276" y="522" style="fill: var(--muted); font-size: 11px">AI-Task-Entity · Key bleibt hier</text>
+<rect x="505" y="60" width="365" height="545" rx="16" style="fill: none; stroke: var(--accent); stroke-width: 2"></rect>
+<text x="519" y="80" style="fill: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .06em">ROOTWISE</text>
+<rect x="520" y="90" width="330" height="60" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="534" y="115" style="fill: var(--text); font-size: 13px; font-weight: 700">PlantRuntime</text>
+<text x="534" y="133" style="fill: var(--muted); font-size: 11px">Events · Stunden-Buckets · 1 Timer pro Pflanze</text>
+<rect x="520" y="190" width="160" height="56" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="534" y="214" style="fill: var(--text); font-size: 13px; font-weight: 700">engine/</text>
+<text x="534" y="232" style="fill: var(--muted); font-size: 11px">reines Python, Theil-Sen</text>
+<rect x="690" y="190" width="160" height="56" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="704" y="214" style="fill: var(--text); font-size: 13px; font-weight: 700">2 Stores</text>
+<text x="704" y="232" style="fill: var(--muted); font-size: 11px">data + journal</text>
+<rect x="520" y="290" width="330" height="50" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="534" y="311" style="fill: var(--text); font-size: 13px; font-weight: 700">Entities · todo · calendar · image</text>
+<text x="534" y="328" style="fill: var(--muted); font-size: 11px">1 Device pro Pflanze (Subentry)</text>
+<rect x="520" y="380" width="330" height="50" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="534" y="401" style="fill: var(--text); font-size: 13px; font-weight: 700">WebSocket + HTTP-Views</text>
+<text x="534" y="418" style="fill: var(--muted); font-size: 11px">Upload und Fotos nur mit Login</text>
+<rect x="520" y="480" width="160" height="60" rx="10" style="fill: var(--surface); stroke: var(--accent); stroke-width: 1.5"></rect>
+<text x="534" y="504" style="fill: var(--text); font-size: 13px; font-weight: 700">Foto-Check</text>
+<text x="534" y="522" style="fill: var(--muted); font-size: 11px">Regeln sofort, KI danach</text>
+<rect x="690" y="480" width="160" height="60" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="704" y="504" style="fill: var(--text); font-size: 13px; font-weight: 700">Notify + Actions</text>
+<text x="704" y="522" style="fill: var(--muted); font-size: 11px">Digest · Ruhezeit</text>
+<line x1="452" y1="98" x2="518" y2="98" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="457" y="90" style="fill: var(--text2); font-size: 11px">Events</text>
+<line x1="452" y1="132" x2="518" y2="132" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="457" y="148" style="fill: var(--text2); font-size: 11px">Backfill</text>
+<line x1="600" y1="152" x2="600" y2="188" marker-start="url(#ah)" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="608" y="174" style="fill: var(--text2); font-size: 11px">Buckets</text>
+<line x1="770" y1="150" x2="770" y2="188" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="778" y="174" style="fill: var(--text2); font-size: 11px">bei Ereignis</text>
+<line x1="685" y1="150" x2="685" y2="288" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="692" y="272" style="fill: var(--text2); font-size: 11px">nur bei Änderung</text>
+<line x1="518" y1="405" x2="454" y2="405" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="460" y="397" style="fill: var(--text2); font-size: 11px">Datei</text>
+<line x1="357" y1="430" x2="357" y2="478" marker-end="url(#aa)" style="stroke: var(--accent); stroke-width: 2"></line>
+<text x="365" y="459" style="fill: var(--text2); font-size: 11px">Anhang</text>
+<line x1="518" y1="510" x2="454" y2="510" marker-end="url(#aa)" style="stroke: var(--accent); stroke-width: 2"></line>
+<text x="460" y="502" style="fill: var(--text2); font-size: 11px">ai_task</text>
+<rect x="20" y="440" width="210" height="180" rx="14" style="fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5"></rect>
+<text x="34" y="464" style="fill: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .06em">INTERNET · NUR MIT OPT-IN</text>
+<rect x="34" y="480" width="176" height="60" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="48" y="504" style="fill: var(--text); font-size: 13px; font-weight: 700">Gemini API</text>
+<text x="48" y="522" style="fill: var(--muted); font-size: 11px">EU-Datenregeln · 48 h</text>
+<rect x="34" y="558" width="176" height="50" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="48" y="579" style="fill: var(--text); font-size: 13px; font-weight: 700">Pl@ntNet</text>
+<text x="48" y="596" style="fill: var(--muted); font-size: 11px">optional, nur Arterkennung</text>
+<line x1="260" y1="510" x2="212" y2="510" marker-end="url(#aa)" style="stroke: var(--accent); stroke-width: 2"></line>
+<text x="236" y="502" text-anchor="middle" style="fill: var(--text2); font-size: 11px">HTTPS</text>
+<polyline points="600,540 600,583 212,583" marker-end="url(#ah)" style="fill: none; stroke: var(--text2); stroke-width: 1.5; stroke-dasharray: 4 4"></polyline>
+<text x="410" y="576" text-anchor="middle" style="fill: var(--text2); font-size: 11px">Top-3-Arten im Wizard</text>
+<text x="950" y="366" style="fill: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .06em">HANDY</text>
+<rect x="950" y="380" width="230" height="50" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="964" y="401" style="fill: var(--text); font-size: 13px; font-weight: 700">Panel und Karten</text>
+<text x="964" y="418" style="fill: var(--muted); font-size: 11px">Companion App · Lit</text>
+<rect x="950" y="480" width="230" height="60" rx="10" style="fill: var(--surface); stroke: var(--line)"></rect>
+<text x="964" y="504" style="fill: var(--text); font-size: 13px; font-weight: 700">Push mit Actions</text>
+<text x="964" y="522" style="fill: var(--muted); font-size: 11px">Gegossen ✓ · +1 Tag · Öffnen</text>
+<line x1="852" y1="405" x2="948" y2="405" marker-start="url(#ah)" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="900" y="397" text-anchor="middle" style="fill: var(--text2); font-size: 11px">WS · Fotos</text>
+<line x1="852" y1="498" x2="948" y2="498" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="900" y="490" text-anchor="middle" style="fill: var(--text2); font-size: 11px">notify</text>
+<line x1="948" y1="524" x2="852" y2="524" marker-end="url(#ah)" style="stroke: var(--text2); stroke-width: 1.5"></line>
+<text x="900" y="540" text-anchor="middle" style="fill: var(--text2); font-size: 11px">Action + Code</text>
+</svg>
+<figcaption style="font-size: 14px; line-height: 1.5; color: var(--text2); max-width: 980px">Grün markiert ist der einzige Weg ins Internet für die Diagnose: Rootwise ruft nur den AI Task von Home Assistant auf, die Gemini-Integration hält den Schlüssel. Pl@ntNet ist optional. Ohne Einwilligung bleibt alles lokal und es gibt nur die Regel-Tipps.</figcaption>
+</figure>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div style="padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px"><strong>Eine Pflanze = ein Subentry + ein Device</strong><span style="font-size: 13px; line-height: 1.45; color: var(--text2)">Struktur im Config Entry, alles Wechselnde in 2 Stores. Ändert sich die Struktur, lädt der Entry neu.</span></div>
+<div style="padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px"><strong>Ungefähr 14 Recorder-Zeilen pro Pflanze und Tag</strong><span style="font-size: 13px; line-height: 1.45; color: var(--text2)">Kein state_class auf abgeleiteten Werten, statische Attribute, Write-Guard. Schont die SD-Karte.</span></div>
+<div style="padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px"><strong>Lokal später nachrüstbar</strong><span style="font-size: 13px; line-height: 1.45; color: var(--text2)">Ollama auf dem Gaming-PC wird einfach eine zweite AI-Task-Entity. Kein eigener KI-Client nötig.</span></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark","section":"Darstellung"},"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'dark' };
+  }
+}
+</script>
+</body>
+</html>
