@@ -1,0 +1,28 @@
+{
+  "name": "rootwise-cards",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lovelace cards for the Rootwise Home Assistant integration",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "sandbox": "vite --config vite.sandbox.config.ts"
+  },
+  "dependencies": {
+    "lit": "^3.3.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-plugin-lit": "^2.3.1",
+    "happy-dom": "^20.14.5",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}

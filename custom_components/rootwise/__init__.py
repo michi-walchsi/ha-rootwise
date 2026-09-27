@@ -14,6 +14,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .config_flow import async_get_species_db
 from .const import DOMAIN
+from .frontend import async_register_cards
 from .hub import RootwiseHub
 from .repairs import async_check_sources
 from .services import async_setup_services
@@ -35,9 +36,10 @@ type RootwiseConfigEntry = ConfigEntry[RootwiseHub]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the actions and the card API."""
+    """Register the actions, the card API and the cards."""
     async_setup_services(hass)
     async_setup_websocket(hass)
+    await async_register_cards(hass)
     return True
 
 
