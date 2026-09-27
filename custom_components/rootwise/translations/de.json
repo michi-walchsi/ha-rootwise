@@ -44,7 +44,7 @@
           },
           "data_description": {
             "area": "Damit schlägt Rootwise im nächsten Schritt Raumsensoren vor.",
-            "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall.",
+            "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall. Spiegel-Sensoren (z. B. von Plant Monitor) stehen nicht zur Wahl: Nimm den echten Sensor, sonst fehlt der Wert, sobald Plant Monitor weg ist.",
             "species": "Bestimmt Gießstil und Start-Schwellen. Weitere Arten kommen mit der nächsten Version."
           },
           "description": "Schritt 1 von 3: Name, Art, Raum und Bodensensor.",
@@ -65,7 +65,7 @@
             "illuminance_sensor": "Ein Lux-Sensor am Fenster. Mehrere Pflanzen dürfen ihn teilen. Rootwise rechnet daraus in einer späteren Version die Tages-Lichtmenge (DLI).",
             "temperature_sensor": "Am besten die Temperatur des Bodensensors selbst. Sonst ein Raumsensor in der Nähe der Pflanze."
           },
-          "description": "Schritt 2 von 3. Vorgeschlagen vom Gerät des Bodensensors und aus dem Raum. Alle Felder sind optional; entferne, was nicht passt.",
+          "description": "Schritt 2 von 3. Vorgeschlagen vom Gerät des Bodensensors und aus dem Raum. Alle Felder sind optional; entferne, was nicht passt. Spiegel-Sensoren von Plant Monitor und Rootwise stehen nicht zur Wahl.",
           "title": "Weitere Sensoren"
         },
         "user": {
@@ -77,7 +77,7 @@
           },
           "data_description": {
             "area": "Damit schlägt Rootwise im nächsten Schritt Raumsensoren vor.",
-            "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall.",
+            "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall. Spiegel-Sensoren (z. B. von Plant Monitor) stehen nicht zur Wahl: Nimm den echten Sensor, sonst fehlt der Wert, sobald Plant Monitor weg ist.",
             "species": "Bestimmt Gießstil und Start-Schwellen. Weitere Arten kommen mit der nächsten Version."
           },
           "description": "Schritt 1 von 3: Name, Art, Raum und Bodensensor.",
@@ -376,6 +376,22 @@
     },
     "not_loaded": {
       "message": "Rootwise ist nicht geladen."
+    }
+  },
+  "issues": {
+    "mirror_source": {
+      "fix_flow": {
+        "abort": {
+          "plant_removed": "Die Pflanze gibt es nicht mehr."
+        },
+        "step": {
+          "confirm": {
+            "description": "Rootwise liest {plant} über Sensoren, die nur einen anderen Sensor kopieren (etwa von Plant Monitor). Das verzögert die Werte und bricht, sobald die andere Integration entfernt wird.\n\nRootwise stellt {plant} auf die echten Sensoren um:\n\n{changes}\n\nBei „?“ ist die Quelle unbekannt; dann öffnen sich die Pflanzen-Einstellungen, und du wählst selbst.",
+            "title": "Echte Sensoren verwenden"
+          }
+        }
+      },
+      "title": "{plant} liest Spiegel-Sensoren"
     }
   },
   "options": {

@@ -5,12 +5,17 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.helpers import (
+    config_validation as cv,
+    entity_registry as er,
+    issue_registry as ir,
+)
 from homeassistant.helpers.typing import ConfigType
 
 from .config_flow import async_get_species_db
 from .const import DOMAIN
 from .hub import RootwiseHub
+from .repairs import async_check_sources
 from .services import async_setup_services
 from .store import RootwiseStorage
 
@@ -41,6 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) -> 
     hub = RootwiseHub(hass, entry, storage, await async_get_species_db(hass))
     entry.runtime_data = hub
     _async_remove_orphans(hass, entry, hub)
+    async_check_sources(hass, entry)
     # Evaluate before the entities exist so they start with a real state.
     for plant in hub.plants.values():
         plant.async_evaluate()
@@ -57,6 +63,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) ->
     if unloaded:
         await entry.runtime_data.async_shutdown()
     return unloaded
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) -> None:
+    """Drop open repair issues together with the entry."""
+    for domain, issue_id in list(ir.async_get(hass).issues):
+        if domain == DOMAIN:
+            ir.async_delete_issue(hass, DOMAIN, issue_id)
 
 
 async def _async_reload(hass: HomeAssistant, entry: RootwiseConfigEntry) -> None:

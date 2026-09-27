@@ -5,7 +5,7 @@ from datetime import timedelta
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -86,3 +86,10 @@ async def test_unload(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.NOT_LOADED
+
+
+async def test_real_sensors_raise_no_issue(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    issues = [key for key in ir.async_get(hass).issues if key[0] == DOMAIN]
+    assert issues == []

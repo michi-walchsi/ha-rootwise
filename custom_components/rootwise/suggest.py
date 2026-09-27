@@ -13,6 +13,7 @@ from .const import (
     CONF_TEMPERATURE_SENSOR,
     SENSOR_DEVICE_CLASSES,
 )
+from .sources import MIRROR_PLATFORMS
 
 # Where to look first: the soil sensor's own device, then the room.
 _FROM_DEVICE = (
@@ -29,7 +30,11 @@ def _device_class(entry: er.RegistryEntry) -> str | None:
 
 
 def _usable(entry: er.RegistryEntry) -> bool:
-    return entry.domain == "sensor" and entry.disabled_by is None
+    return (
+        entry.domain == "sensor"
+        and entry.disabled_by is None
+        and entry.platform not in MIRROR_PLATFORMS
+    )
 
 
 def _room_entities(
@@ -69,7 +74,7 @@ def suggest_sensors(
             if _usable(e)
             and e.entity_id != moisture_sensor
             # A soil sensor's own humidity-like values are not room climate.
-            and e.device_id != soil_device
+            and (soil_device is None or e.device_id != soil_device)
         ]
         if area_id
         else []

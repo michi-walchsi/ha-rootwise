@@ -57,6 +57,7 @@ from .const import (
     SUBENTRY_PLANT,
     WINDOWS,
 )
+from .sources import mirror_entities, resolve
 from .species.db import SpeciesDb
 from .suggest import suggest_sensors
 
@@ -137,13 +138,15 @@ def _select(options: list[str], key: str) -> SelectSelector:
     )
 
 
-def _sensor(device_class: str | list[str]) -> EntitySelector:
+def _sensor(device_class: str | list[str], exclude: list[str]) -> EntitySelector:
     return EntitySelector(
-        EntitySelectorConfig(domain="sensor", device_class=device_class)
+        EntitySelectorConfig(
+            domain="sensor", device_class=device_class, exclude_entities=exclude
+        )
     )
 
 
-def basics_schema(db: SpeciesDb, language: str) -> vol.Schema:
+def basics_schema(db: SpeciesDb, language: str, exclude: list[str]) -> vol.Schema:
     """Step 1: name, species, room and soil sensor."""
     species = sorted(
         (SelectOptionDict(value=s.id, label=s.label(language)) for s in db.all()),
@@ -158,19 +161,33 @@ def basics_schema(db: SpeciesDb, language: str) -> vol.Schema:
             ),
             vol.Optional(CONF_AREA): AreaSelector(),
             # Some soil sensors report as humidity instead of moisture.
-            vol.Optional(CONF_MOISTURE_SENSOR): _sensor(["moisture", "humidity"]),
+            vol.Optional(CONF_MOISTURE_SENSOR): _sensor(
+                ["moisture", "humidity"], exclude
+            ),
         }
     )
 
 
-def sensors_schema() -> vol.Schema:
+def sensors_schema(exclude: list[str]) -> vol.Schema:
     """Step 2: further sensors, all optional."""
     return vol.Schema(
         {
-            vol.Optional(key): _sensor(device_class)
+            vol.Optional(key): _sensor(device_class, exclude)
             for key, device_class in SENSOR_DEVICE_CLASSES.items()
         }
     )
+
+
+def _real_sensors(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+    """Replace mirror sensors by the real ones; drop mirrors of unknown origin."""
+    result = dict(data)
+    for key in (CONF_MOISTURE_SENSOR, *SENSOR_KEYS):
+        if entity_id := result.get(key):
+            if (real := resolve(hass, entity_id)) is None:
+                result.pop(key)
+            else:
+                result[key] = real
+    return result
 
 
 def pot_schema() -> vol.Schema:
@@ -223,7 +240,7 @@ class PlantSubentryFlow(ConfigSubentryFlow):
         if user_input is None and not self._name:
             current = self._get_reconfigure_subentry()
             self._name = current.title
-            self._data = dict(current.data)
+            self._data = _real_sensors(self.hass, dict(current.data))
         return await self._async_basics("reconfigure", user_input)
 
     async def _async_basics(
@@ -248,7 +265,10 @@ class PlantSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(
-                basics_schema(db, self.hass.config.language), values
+                basics_schema(
+                    db, self.hass.config.language, mirror_entities(self.hass)
+                ),
+                values,
             ),
             errors=errors,
         )
@@ -270,7 +290,9 @@ class PlantSubentryFlow(ConfigSubentryFlow):
             )
         return self.async_show_form(
             step_id="sensors",
-            data_schema=self.add_suggested_values_to_schema(sensors_schema(), values),
+            data_schema=self.add_suggested_values_to_schema(
+                sensors_schema(mirror_entities(self.hass)), values
+            ),
         )
 
     async def async_step_pot(

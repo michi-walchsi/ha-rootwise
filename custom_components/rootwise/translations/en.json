@@ -44,7 +44,7 @@
           },
           "data_description": {
             "area": "Used to suggest room sensors in the next step.",
-            "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval.",
+            "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval. Mirror sensors (for example from Plant Monitor) are not offered: pick the real sensor, or the value disappears once Plant Monitor is gone.",
             "species": "Sets watering style and default thresholds. More species follow with the next version."
           },
           "description": "Step 1 of 3: name, species, room and soil sensor.",
@@ -65,7 +65,7 @@
             "illuminance_sensor": "A lux sensor at the window. Several plants may share it. Rootwise turns it into the daily light amount (DLI) in a later version.",
             "temperature_sensor": "Best: the temperature of the soil sensor itself. Otherwise a room sensor near the plant."
           },
-          "description": "Step 2 of 3. Suggested from the soil sensor's device and the room. All fields are optional; remove what does not fit.",
+          "description": "Step 2 of 3. Suggested from the soil sensor's device and the room. All fields are optional; remove what does not fit. Mirror sensors from Plant Monitor and Rootwise are not offered.",
           "title": "Further sensors"
         },
         "user": {
@@ -77,7 +77,7 @@
           },
           "data_description": {
             "area": "Used to suggest room sensors in the next step.",
-            "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval.",
+            "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval. Mirror sensors (for example from Plant Monitor) are not offered: pick the real sensor, or the value disappears once Plant Monitor is gone.",
             "species": "Sets watering style and default thresholds. More species follow with the next version."
           },
           "description": "Step 1 of 3: name, species, room and soil sensor.",
@@ -376,6 +376,22 @@
     },
     "not_loaded": {
       "message": "Rootwise is not loaded."
+    }
+  },
+  "issues": {
+    "mirror_source": {
+      "fix_flow": {
+        "abort": {
+          "plant_removed": "This plant no longer exists."
+        },
+        "step": {
+          "confirm": {
+            "description": "Rootwise reads {plant} through sensors that only copy another sensor (for example from Plant Monitor). That delays the values and breaks as soon as the other integration is removed.\n\nRootwise switches {plant} to the real sensors:\n\n{changes}\n\nWhere it shows “?”, the source is unknown; the plant settings open so you can pick it.",
+            "title": "Use the real sensors"
+          }
+        }
+      },
+      "title": "{plant} reads mirror sensors"
     }
   },
   "options": {
