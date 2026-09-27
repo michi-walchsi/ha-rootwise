@@ -24,67 +24,63 @@
         "user": "Pflanze hinzufügen"
       },
       "step": {
+        "pot": {
+          "data": {
+            "drainage": "Abzugsloch",
+            "location": "Standort",
+            "pot_diameter": "Topfdurchmesser",
+            "pot_material": "Topfmaterial",
+            "window": "Fensterrichtung"
+          },
+          "description": "Schritt 3 von 3. Hilft bei der Gießmenge und später bei Licht-Tipps.",
+          "title": "Topf und Standort"
+        },
         "reconfigure": {
           "data": {
             "area": "Raum",
-            "name": "Name",
-            "species": "Art"
-          },
-          "sections": {
-            "pot_and_place": {
-              "data": {
-                "drainage": "Abzugsloch",
-                "location": "Standort",
-                "pot_diameter": "Topfdurchmesser",
-                "pot_material": "Topfmaterial",
-                "window": "Fensterrichtung"
-              },
-              "name": "Topf und Standort"
-            },
-            "sensors": {
-              "data": {
-                "battery_sensor": "Batterie",
-                "moisture_sensor": "Bodenfeuchte",
-                "temperature_sensor": "Temperatur"
-              },
-              "name": "Sensoren"
-            }
-          },
-          "title": "Pflanze ändern"
-        },
-        "user": {
-          "data": {
-            "area": "Raum",
+            "moisture_sensor": "Bodenfeuchtesensor",
             "name": "Name",
             "species": "Art"
           },
           "data_description": {
-            "species": "Aus der Liste wählen oder einen beliebigen Namen eintippen."
+            "area": "Damit schlägt Rootwise im nächsten Schritt Raumsensoren vor.",
+            "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall.",
+            "species": "Bestimmt Gießstil und Start-Schwellen. Weitere Arten kommen mit der nächsten Version."
           },
-          "description": "Gib der Pflanze einen Namen und verbinde ihre Sensoren. Ohne Bodensensor erinnert Rootwise nach Intervall.",
-          "sections": {
-            "pot_and_place": {
-              "data": {
-                "drainage": "Abzugsloch",
-                "location": "Standort",
-                "pot_diameter": "Topfdurchmesser",
-                "pot_material": "Topfmaterial",
-                "window": "Fensterrichtung"
-              },
-              "name": "Topf und Standort"
-            },
-            "sensors": {
-              "data": {
-                "battery_sensor": "Batterie",
-                "moisture_sensor": "Bodenfeuchte",
-                "temperature_sensor": "Temperatur"
-              },
-              "data_description": {
-                "moisture_sensor": "Jeder Bodensensor gehört zu genau einer Pflanze."
-              },
-              "name": "Sensoren"
-            }
+          "description": "Schritt 1 von 3: Name, Art, Raum und Bodensensor.",
+          "title": "Pflanze ändern"
+        },
+        "sensors": {
+          "data": {
+            "battery_sensor": "Batterie",
+            "conductivity_sensor": "Düngerstand (Leitwert)",
+            "humidity_sensor": "Luftfeuchte",
+            "illuminance_sensor": "Licht (Lux)",
+            "temperature_sensor": "Temperatur an der Pflanze"
           },
+          "data_description": {
+            "battery_sensor": "Meist die Batterie des Bodensensors.",
+            "conductivity_sensor": "Messen nur Sensoren wie Mi Flora.",
+            "humidity_sensor": "Luftfeuchte im Raum, nicht die Bodenfeuchte.",
+            "illuminance_sensor": "Ein Lux-Sensor am Fenster. Mehrere Pflanzen dürfen ihn teilen. Rootwise rechnet daraus in einer späteren Version die Tages-Lichtmenge (DLI).",
+            "temperature_sensor": "Am besten die Temperatur des Bodensensors selbst. Sonst ein Raumsensor in der Nähe der Pflanze."
+          },
+          "description": "Schritt 2 von 3. Vorgeschlagen vom Gerät des Bodensensors und aus dem Raum. Alle Felder sind optional; entferne, was nicht passt.",
+          "title": "Weitere Sensoren"
+        },
+        "user": {
+          "data": {
+            "area": "Raum",
+            "moisture_sensor": "Bodenfeuchtesensor",
+            "name": "Name",
+            "species": "Art"
+          },
+          "data_description": {
+            "area": "Damit schlägt Rootwise im nächsten Schritt Raumsensoren vor.",
+            "moisture_sensor": "Der Sensor im Topf. Leer lassen bei einer Pflanze ohne Sensor: Rootwise erinnert dann nach Intervall.",
+            "species": "Bestimmt Gießstil und Start-Schwellen. Weitere Arten kommen mit der nächsten Version."
+          },
+          "description": "Schritt 1 von 3: Name, Art, Raum und Bodensensor.",
           "title": "Pflanze hinzufügen"
         }
       }

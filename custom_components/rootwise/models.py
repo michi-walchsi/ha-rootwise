@@ -11,7 +11,10 @@ from homeassistant.config_entries import ConfigSubentry
 from .const import (
     CONF_AREA,
     CONF_BATTERY_SENSOR,
+    CONF_CONDUCTIVITY_SENSOR,
     CONF_DRAINAGE,
+    CONF_HUMIDITY_SENSOR,
+    CONF_ILLUMINANCE_SENSOR,
     CONF_LOCATION,
     CONF_MOISTURE_SENSOR,
     CONF_POT_DIAMETER,
@@ -32,6 +35,9 @@ class PlantConfig:
     area_id: str | None
     moisture_sensor: str | None
     temperature_sensor: str | None
+    humidity_sensor: str | None
+    illuminance_sensor: str | None
+    conductivity_sensor: str | None
     battery_sensor: str | None
     pot_diameter: float
     pot_material: str
@@ -56,6 +62,9 @@ class PlantConfig:
             area_id=data.get(CONF_AREA) or None,
             moisture_sensor=data.get(CONF_MOISTURE_SENSOR) or None,
             temperature_sensor=data.get(CONF_TEMPERATURE_SENSOR) or None,
+            humidity_sensor=data.get(CONF_HUMIDITY_SENSOR) or None,
+            illuminance_sensor=data.get(CONF_ILLUMINANCE_SENSOR) or None,
+            conductivity_sensor=data.get(CONF_CONDUCTIVITY_SENSOR) or None,
             battery_sensor=data.get(CONF_BATTERY_SENSOR) or None,
             pot_diameter=float(data.get(CONF_POT_DIAMETER, 18)),
             pot_material=str(data.get(CONF_POT_MATERIAL, "plastic")),

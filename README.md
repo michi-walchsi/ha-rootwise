@@ -8,7 +8,10 @@ Rootwise zeigt dir, welche Pflanze heute Wasser braucht. Du trägst das Gießen 
 
 ## Was Phase 1 kann
 
-- Pflanzen anlegen: unter *Einstellungen → Geräte & Dienste → Rootwise → Pflanze hinzufügen*
+- Pflanzen anlegen: unter *Einstellungen → Geräte & Dienste → Rootwise → Pflanze hinzufügen*. Das geht in drei kurzen Schritten:
+  1. Name, Art, Raum und Bodensensor
+  2. Weitere Sensoren: Temperatur, Luftfeuchte, Licht, Leitwert und Batterie. Rootwise schlägt sie vom Gerät des Bodensensors und aus dem Raum vor.
+  3. Topf und Standort
 - Jede Pflanze ist ein eigenes Gerät mit:
   - **Status**: ok, durstig, zu nass, Sensor offline
   - **Braucht Wasser** und **Problem** (binäre Sensoren)

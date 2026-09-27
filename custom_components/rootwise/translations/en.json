@@ -24,67 +24,63 @@
         "user": "Add plant"
       },
       "step": {
+        "pot": {
+          "data": {
+            "drainage": "Drainage hole",
+            "location": "Location",
+            "pot_diameter": "Pot diameter",
+            "pot_material": "Pot material",
+            "window": "Window direction"
+          },
+          "description": "Step 3 of 3. Helps with the watering amount and later with light tips.",
+          "title": "Pot and location"
+        },
         "reconfigure": {
           "data": {
             "area": "Room",
-            "name": "Name",
-            "species": "Species"
-          },
-          "sections": {
-            "pot_and_place": {
-              "data": {
-                "drainage": "Drainage hole",
-                "location": "Location",
-                "pot_diameter": "Pot diameter",
-                "pot_material": "Pot material",
-                "window": "Window direction"
-              },
-              "name": "Pot and location"
-            },
-            "sensors": {
-              "data": {
-                "battery_sensor": "Battery",
-                "moisture_sensor": "Soil moisture",
-                "temperature_sensor": "Temperature"
-              },
-              "name": "Sensors"
-            }
-          },
-          "title": "Change plant"
-        },
-        "user": {
-          "data": {
-            "area": "Room",
+            "moisture_sensor": "Soil moisture sensor",
             "name": "Name",
             "species": "Species"
           },
           "data_description": {
-            "species": "Pick from the list or type any name."
+            "area": "Used to suggest room sensors in the next step.",
+            "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval.",
+            "species": "Sets watering style and default thresholds. More species follow with the next version."
           },
-          "description": "Name the plant and connect its sensors. Without a soil sensor, Rootwise reminds you by interval.",
-          "sections": {
-            "pot_and_place": {
-              "data": {
-                "drainage": "Drainage hole",
-                "location": "Location",
-                "pot_diameter": "Pot diameter",
-                "pot_material": "Pot material",
-                "window": "Window direction"
-              },
-              "name": "Pot and location"
-            },
-            "sensors": {
-              "data": {
-                "battery_sensor": "Battery",
-                "moisture_sensor": "Soil moisture",
-                "temperature_sensor": "Temperature"
-              },
-              "data_description": {
-                "moisture_sensor": "Each soil sensor belongs to one plant."
-              },
-              "name": "Sensors"
-            }
+          "description": "Step 1 of 3: name, species, room and soil sensor.",
+          "title": "Change plant"
+        },
+        "sensors": {
+          "data": {
+            "battery_sensor": "Battery",
+            "conductivity_sensor": "Fertilizer level (conductivity)",
+            "humidity_sensor": "Air humidity",
+            "illuminance_sensor": "Light (lux)",
+            "temperature_sensor": "Temperature at the plant"
           },
+          "data_description": {
+            "battery_sensor": "Usually the soil sensor's battery.",
+            "conductivity_sensor": "Only sensors like Mi Flora measure this.",
+            "humidity_sensor": "Air humidity in the room, not soil moisture.",
+            "illuminance_sensor": "A lux sensor at the window. Several plants may share it. Rootwise turns it into the daily light amount (DLI) in a later version.",
+            "temperature_sensor": "Best: the temperature of the soil sensor itself. Otherwise a room sensor near the plant."
+          },
+          "description": "Step 2 of 3. Suggested from the soil sensor's device and the room. All fields are optional; remove what does not fit.",
+          "title": "Further sensors"
+        },
+        "user": {
+          "data": {
+            "area": "Room",
+            "moisture_sensor": "Soil moisture sensor",
+            "name": "Name",
+            "species": "Species"
+          },
+          "data_description": {
+            "area": "Used to suggest room sensors in the next step.",
+            "moisture_sensor": "The sensor in the pot. Leave empty for a plant without sensor: Rootwise then reminds you by interval.",
+            "species": "Sets watering style and default thresholds. More species follow with the next version."
+          },
+          "description": "Step 1 of 3: name, species, room and soil sensor.",
           "title": "Add plant"
         }
       }

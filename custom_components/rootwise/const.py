@@ -20,21 +20,32 @@ CONF_DRAINAGE: Final = "drainage"
 CONF_WINDOW: Final = "window"
 CONF_LOCATION: Final = "location"
 
-SECTION_SENSORS: Final = "sensors"
-SECTION_POT: Final = "pot_and_place"
-SECTION_FIELDS: Final = {
-    SECTION_SENSORS: (
-        CONF_MOISTURE_SENSOR,
-        CONF_TEMPERATURE_SENSOR,
-        CONF_BATTERY_SENSOR,
-    ),
-    SECTION_POT: (
-        CONF_POT_DIAMETER,
-        CONF_POT_MATERIAL,
-        CONF_DRAINAGE,
-        CONF_WINDOW,
-        CONF_LOCATION,
-    ),
+CONF_HUMIDITY_SENSOR: Final = "humidity_sensor"
+CONF_ILLUMINANCE_SENSOR: Final = "illuminance_sensor"
+CONF_CONDUCTIVITY_SENSOR: Final = "conductivity_sensor"
+
+# Plant flow steps: basics -> further sensors -> pot and place
+BASIC_KEYS: Final[tuple[str, ...]] = (CONF_SPECIES, CONF_AREA, CONF_MOISTURE_SENSOR)
+SENSOR_KEYS: Final[tuple[str, ...]] = (
+    CONF_TEMPERATURE_SENSOR,
+    CONF_HUMIDITY_SENSOR,
+    CONF_ILLUMINANCE_SENSOR,
+    CONF_CONDUCTIVITY_SENSOR,
+    CONF_BATTERY_SENSOR,
+)
+POT_KEYS: Final[tuple[str, ...]] = (
+    CONF_POT_DIAMETER,
+    CONF_POT_MATERIAL,
+    CONF_DRAINAGE,
+    CONF_WINDOW,
+    CONF_LOCATION,
+)
+SENSOR_DEVICE_CLASSES: Final[dict[str, str]] = {
+    CONF_TEMPERATURE_SENSOR: "temperature",
+    CONF_HUMIDITY_SENSOR: "humidity",
+    CONF_ILLUMINANCE_SENSOR: "illuminance",
+    CONF_CONDUCTIVITY_SENSOR: "conductivity",
+    CONF_BATTERY_SENSOR: "battery",
 }
 
 POT_MATERIALS: Final = ["plastic", "terracotta", "ceramic_glazed", "self_watering"]

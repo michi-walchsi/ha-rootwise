@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import Any
 
 from homeassistant.config_entries import (
+    SOURCE_RECONFIGURE,
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
@@ -16,7 +16,6 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
     AreaSelector,
     BooleanSelector,
@@ -37,8 +36,8 @@ from homeassistant.helpers.selector import (
 import voluptuous as vol
 
 from .const import (
+    BASIC_KEYS,
     CONF_AREA,
-    CONF_BATTERY_SENSOR,
     CONF_DIGEST_TIME,
     CONF_DRAINAGE,
     CONF_LOCATION,
@@ -47,19 +46,19 @@ from .const import (
     CONF_POT_DIAMETER,
     CONF_POT_MATERIAL,
     CONF_SPECIES,
-    CONF_TEMPERATURE_SENSOR,
     CONF_WINDOW,
     DEFAULT_DIGEST_TIME,
     DOMAIN,
     LOCATIONS,
+    POT_KEYS,
     POT_MATERIALS,
-    SECTION_FIELDS,
-    SECTION_POT,
-    SECTION_SENSORS,
+    SENSOR_DEVICE_CLASSES,
+    SENSOR_KEYS,
     SUBENTRY_PLANT,
     WINDOWS,
 )
 from .species.db import SpeciesDb
+from .suggest import suggest_sensors
 
 
 async def async_get_species_db(hass: HomeAssistant) -> SpeciesDb:
@@ -144,137 +143,168 @@ def _sensor(device_class: str | list[str]) -> EntitySelector:
     )
 
 
-def plant_schema(db: SpeciesDb, language: str) -> vol.Schema:
-    """Form for adding or changing a plant."""
+def basics_schema(db: SpeciesDb, language: str) -> vol.Schema:
+    """Step 1: name, species, room and soil sensor."""
     species = sorted(
         (SelectOptionDict(value=s.id, label=s.label(language)) for s in db.all()),
-        key=lambda o: o["label"],
+        key=lambda o: o["label"].casefold(),
     )
     return vol.Schema(
         {
             vol.Required(CONF_NAME): TextSelector(),
-            vol.Required(CONF_SPECIES): SelectSelector(
-                SelectSelectorConfig(
-                    options=species, custom_value=True, mode=SelectSelectorMode.DROPDOWN
-                )
+            # Optional: a required select would silently pick the first species.
+            vol.Optional(CONF_SPECIES): SelectSelector(
+                SelectSelectorConfig(options=species, mode=SelectSelectorMode.DROPDOWN)
             ),
             vol.Optional(CONF_AREA): AreaSelector(),
-            vol.Required(SECTION_SENSORS): section(
-                vol.Schema(
-                    {
-                        # Some soil sensors report as humidity instead of moisture.
-                        vol.Optional(CONF_MOISTURE_SENSOR): _sensor(
-                            ["moisture", "humidity"]
-                        ),
-                        vol.Optional(CONF_TEMPERATURE_SENSOR): _sensor("temperature"),
-                        vol.Optional(CONF_BATTERY_SENSOR): _sensor("battery"),
-                    }
-                ),
-                {"collapsed": False},
+            # Some soil sensors report as humidity instead of moisture.
+            vol.Optional(CONF_MOISTURE_SENSOR): _sensor(["moisture", "humidity"]),
+        }
+    )
+
+
+def sensors_schema() -> vol.Schema:
+    """Step 2: further sensors, all optional."""
+    return vol.Schema(
+        {
+            vol.Optional(key): _sensor(device_class)
+            for key, device_class in SENSOR_DEVICE_CLASSES.items()
+        }
+    )
+
+
+def pot_schema() -> vol.Schema:
+    """Step 3: pot and place."""
+    return vol.Schema(
+        {
+            vol.Optional(CONF_POT_DIAMETER, default=18): NumberSelector(
+                NumberSelectorConfig(
+                    min=5,
+                    max=80,
+                    step=1,
+                    unit_of_measurement="cm",
+                    mode=NumberSelectorMode.BOX,
+                )
             ),
-            vol.Required(SECTION_POT): section(
-                vol.Schema(
-                    {
-                        vol.Optional(CONF_POT_DIAMETER, default=18): NumberSelector(
-                            NumberSelectorConfig(
-                                min=5,
-                                max=80,
-                                step=1,
-                                unit_of_measurement="cm",
-                                mode=NumberSelectorMode.BOX,
-                            )
-                        ),
-                        vol.Optional(CONF_POT_MATERIAL, default="plastic"): _select(
-                            POT_MATERIALS, CONF_POT_MATERIAL
-                        ),
-                        vol.Optional(CONF_DRAINAGE, default=True): BooleanSelector(),
-                        vol.Optional(CONF_WINDOW, default="none"): _select(
-                            WINDOWS, CONF_WINDOW
-                        ),
-                        vol.Optional(CONF_LOCATION, default="indoor"): _select(
-                            LOCATIONS, CONF_LOCATION
-                        ),
-                    }
-                ),
-                {"collapsed": True},
+            vol.Optional(CONF_POT_MATERIAL, default="plastic"): _select(
+                POT_MATERIALS, CONF_POT_MATERIAL
+            ),
+            vol.Optional(CONF_DRAINAGE, default=True): BooleanSelector(),
+            vol.Optional(CONF_WINDOW, default="none"): _select(WINDOWS, CONF_WINDOW),
+            vol.Optional(CONF_LOCATION, default="indoor"): _select(
+                LOCATIONS, CONF_LOCATION
             ),
         }
     )
 
 
-def flatten(user_input: Mapping[str, Any]) -> dict[str, Any]:
-    """Turn form input (with sections) into flat subentry data."""
-    data: dict[str, Any] = {
-        k: v
-        for k, v in user_input.items()
-        if k not in SECTION_FIELDS and k != CONF_NAME and v not in (None, "")
-    }
-    for section_key in SECTION_FIELDS:
-        for key, value in user_input.get(section_key, {}).items():
-            if value not in (None, ""):
-                data[key] = value
-    return data
-
-
-def unflatten(name: str, data: Mapping[str, Any]) -> dict[str, Any]:
-    """Turn subentry data back into form values (with sections)."""
-    values: dict[str, Any] = {CONF_NAME: name}
-    for key in (CONF_SPECIES, CONF_AREA):
-        if key in data:
-            values[key] = data[key]
-    for section_key, keys in SECTION_FIELDS.items():
-        values[section_key] = {k: data[k] for k in keys if k in data}
-    return values
-
-
 class PlantSubentryFlow(ConfigSubentryFlow):
-    """Add or change a plant."""
+    """Add or change a plant in three short steps."""
+
+    def __init__(self) -> None:
+        """Collect the plant across steps."""
+        self._name = ""
+        self._data: dict[str, Any] = {}
+
+    @property
+    def _reconfiguring(self) -> bool:
+        return self.source == SOURCE_RECONFIGURE
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Add a plant."""
-        return await self._async_form("user", user_input, None)
+        """Step 1 when adding."""
+        return await self._async_basics("user", user_input)
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Change a plant."""
-        return await self._async_form(
-            "reconfigure", user_input, self._get_reconfigure_subentry()
-        )
+        """Step 1 when changing; starts from the stored plant."""
+        if user_input is None and not self._name:
+            current = self._get_reconfigure_subentry()
+            self._name = current.title
+            self._data = dict(current.data)
+        return await self._async_basics("reconfigure", user_input)
 
-    async def _async_form(
-        self,
-        step_id: str,
-        user_input: dict[str, Any] | None,
-        current: ConfigSubentry | None,
+    async def _async_basics(
+        self, step_id: str, user_input: dict[str, Any] | None
     ) -> SubentryFlowResult:
-        entry = self._get_entry()
         errors: dict[str, str] = {}
         if user_input is not None:
-            data = flatten(user_input)
-            moisture = data.get(CONF_MOISTURE_SENSOR)
-            if moisture and _sensor_in_use(entry, moisture, current):
+            moisture = user_input.get(CONF_MOISTURE_SENSOR)
+            current = self._get_reconfigure_subentry() if self._reconfiguring else None
+            if moisture and _sensor_in_use(self._get_entry(), moisture, current):
                 errors["base"] = "sensor_in_use"
             else:
-                name = str(user_input[CONF_NAME]).strip()
-                if current is None:
-                    return self.async_create_entry(
-                        title=name, data=data, unique_id=moisture
-                    )
-                return self.async_update_and_abort(
-                    entry, current, title=name, data=data, unique_id=moisture
-                )
+                self._name = str(user_input[CONF_NAME]).strip()
+                self._merge(user_input, BASIC_KEYS)
+                return await self.async_step_sensors()
 
         db = await async_get_species_db(self.hass)
-        schema = plant_schema(db, self.hass.config.language)
-        suggested = user_input or (
-            unflatten(current.title, current.data) if current else None
+        values = user_input or {
+            CONF_NAME: self._name,
+            **{k: self._data[k] for k in BASIC_KEYS if k in self._data},
+        }
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=self.add_suggested_values_to_schema(
+                basics_schema(db, self.hass.config.language), values
+            ),
+            errors=errors,
         )
-        if suggested:
-            schema = self.add_suggested_values_to_schema(schema, suggested)
-        return self.async_show_form(step_id=step_id, data_schema=schema, errors=errors)
+
+    async def async_step_sensors(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Step 2: further sensors, prefilled from the soil sensor and the room."""
+        if user_input is not None:
+            self._merge(user_input, SENSOR_KEYS)
+            return await self.async_step_pot()
+        if self._reconfiguring:
+            values = {k: self._data[k] for k in SENSOR_KEYS if k in self._data}
+        else:
+            values = suggest_sensors(
+                self.hass,
+                self._data.get(CONF_MOISTURE_SENSOR),
+                self._data.get(CONF_AREA),
+            )
+        return self.async_show_form(
+            step_id="sensors",
+            data_schema=self.add_suggested_values_to_schema(sensors_schema(), values),
+        )
+
+    async def async_step_pot(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Step 3: pot and place, then save."""
+        if user_input is not None:
+            self._merge(user_input, POT_KEYS)
+            moisture = self._data.get(CONF_MOISTURE_SENSOR)
+            if self._reconfiguring:
+                return self.async_update_and_abort(
+                    self._get_entry(),
+                    self._get_reconfigure_subentry(),
+                    title=self._name,
+                    data=self._data,
+                    unique_id=moisture,
+                )
+            return self.async_create_entry(
+                title=self._name, data=self._data, unique_id=moisture
+            )
+        values = {k: self._data[k] for k in POT_KEYS if k in self._data}
+        return self.async_show_form(
+            step_id="pot",
+            data_schema=self.add_suggested_values_to_schema(pot_schema(), values),
+        )
+
+    def _merge(self, user_input: dict[str, Any], keys: tuple[str, ...]) -> None:
+        """Take this step's fields; an emptied field removes the value."""
+        for key in keys:
+            value = user_input.get(key)
+            if value in (None, "", []):
+                self._data.pop(key, None)
+            else:
+                self._data[key] = value
 
 
 def _sensor_in_use(

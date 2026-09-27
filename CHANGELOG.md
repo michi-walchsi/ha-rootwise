@@ -8,6 +8,7 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen 
 
 ### Neu
 - Integration mit Haupteintrag, Optionen und Unterpunkt „Pflanze“ (anlegen, ändern, löschen)
+- Pflanze anlegen in drei Schritten; weitere Sensoren werden vom Gerät des Bodensensors und aus dem Raum vorgeschlagen (Temperatur, Luftfeuchte, Licht, Leitwert, Batterie)
 - Pro Pflanze ein Gerät mit Status, „Braucht Wasser“, „Problem“, „Zuletzt gegossen“, Knöpfen und Feuchte-Schwellen
 - Gieß-Intervall für Pflanzen ohne Bodensensor
 - Urlaubsmodus, Zähler „Pflanzen brauchen Wasser“, To-do-Liste „Pflanzenpflege“
