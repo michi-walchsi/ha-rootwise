@@ -4,7 +4,7 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen 
 
 ## [Unreleased]
 
-## [0.1.0] - Phase 1: Fundament
+## [0.1.0] - 2026-09-27 (Phase 1: Fundament)
 
 ### Neu
 - Integration mit Haupteintrag, Optionen und Unterpunkt „Pflanze“ (anlegen, ändern, löschen)
