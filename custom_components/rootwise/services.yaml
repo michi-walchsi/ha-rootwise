@@ -1,7 +1,5 @@
 log_care:
   target:
-    device:
-      integration: rootwise
     entity:
       integration: rootwise
   fields:
@@ -29,8 +27,6 @@ log_care:
 
 snooze:
   target:
-    device:
-      integration: rootwise
     entity:
       integration: rootwise
   fields:
