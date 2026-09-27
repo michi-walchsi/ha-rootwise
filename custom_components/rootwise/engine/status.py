@@ -13,6 +13,16 @@ HYSTERESIS = 3.0
 WATERED_GRACE = timedelta(hours=3)
 
 
+class MoistureLevel(StrEnum):
+    """Finer soil moisture reading for display (does not replace the status)."""
+
+    DRY = "dry"
+    DRYING = "drying"
+    OK = "ok"
+    FRESH = "fresh"  # above the wet threshold, but only recently: normal after watering
+    TOO_WET = "too_wet"
+
+
 class Status(StrEnum):
     """Overall plant status."""
 
@@ -64,6 +74,7 @@ class PlantStatus:
     problem: bool
     wet_since: datetime | None = None
     next_due: datetime | None = None
+    moisture_level: MoistureLevel | None = None
 
 
 def evaluate(inp: PlantInput) -> PlantStatus:
@@ -106,7 +117,25 @@ def evaluate(inp: PlantInput) -> PlantStatus:
         problem=status in (Status.TOO_WET, Status.SENSOR_OFFLINE),
         wet_since=wet_since,
         next_due=next_due,
+        moisture_level=_moisture_level(inp, status),
     )
+
+
+def _moisture_level(inp: PlantInput, status: Status) -> MoistureLevel | None:
+    if inp.moisture is None or inp.moisture.value is None:
+        return None
+    if status is Status.SENSOR_OFFLINE:
+        return None
+    value = inp.moisture.value
+    if status is Status.THIRSTY:
+        return MoistureLevel.DRY
+    if status is Status.TOO_WET:
+        return MoistureLevel.TOO_WET
+    if value > inp.high:
+        return MoistureLevel.FRESH
+    if value < inp.low + (inp.high - inp.low) / 4:
+        return MoistureLevel.DRYING
+    return MoistureLevel.OK
 
 
 def _is_offline(reading: MoistureReading, now: datetime) -> bool:

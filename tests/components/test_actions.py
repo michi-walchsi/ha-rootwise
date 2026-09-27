@@ -16,7 +16,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.rootwise.const import DOMAIN
 
-from .conftest import subentry_id
+from .conftest import MOISTURE, subentry_id
 
 
 async def _press(hass: HomeAssistant, entity_id: str) -> None:
@@ -64,7 +64,7 @@ async def test_log_care_without_plant_is_rejected(
         await hass.services.async_call(
             DOMAIN,
             "log_care",
-            {"entity_id": "sensor.monstera_soil_moisture", "care_type": "watered"},
+            {"entity_id": MOISTURE, "care_type": "watered"},
             blocking=True,
         )
 

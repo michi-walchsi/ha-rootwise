@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 from typing import Any
@@ -23,9 +24,27 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.util import dt as dt_util
 
-from .const import CARE_WATERED, DEFAULT_INTERVAL, DEFAULT_SNOOZE, SUBENTRY_PLANT
+from .const import (
+    BATTERY_LOW,
+    CARE_WATERED,
+    DEFAULT_INTERVAL,
+    DEFAULT_SNOOZE,
+    HUB_ENTITY_KEYS,
+    MEASUREMENTS,
+    PLANT_ENTITY_KEYS,
+    SUBENTRY_PLANT,
+)
 from .engine.interval import seasonal_interval
-from .engine.status import MoistureReading, PlantInput, PlantStatus, Status, evaluate
+from .engine.measure import Range, Rating, rate_all
+from .engine.status import (
+    MoistureLevel,
+    MoistureReading,
+    PlantInput,
+    PlantStatus,
+    Reason,
+    Status,
+    evaluate,
+)
 from .engine.thresholds import default_thresholds
 from .models import PlantConfig
 from .species.db import Species, SpeciesDb
@@ -39,6 +58,32 @@ THRESHOLD_HIGH = "high"
 
 def _parse(value: str | None) -> datetime | None:
     return dt_util.parse_datetime(value) if value else None
+
+
+@dataclass(frozen=True, slots=True)
+class Measurement:
+    """Current value of one mirrored measurement."""
+
+    key: str
+    source: str
+    value: float | None
+    unit: str | None
+    target: Range | None
+    range_source: str | None
+    rating: Rating | None
+    level: MoistureLevel | None = None
+
+
+def _range_from(raw: Any) -> Range | None:
+    if not isinstance(raw, dict):
+        return None
+    low, high = raw.get("min"), raw.get("max")
+    if low is None and high is None:
+        return None
+    return Range(
+        float(low) if low is not None else None,
+        float(high) if high is not None else None,
+    )
 
 
 class PlantRuntime:
@@ -57,6 +102,9 @@ class PlantRuntime:
         self.config = config
         self.species = species
         self.state: PlantStatus | None = None
+        self.measurements: dict[str, Measurement] = {}
+        self.hints: tuple[Reason, ...] = ()
+        self._ratings: dict[str, Rating] = {}
         self._wet_since: datetime | None = None
         self._listeners: list[Callable[[], None]] = []
         self._unsubs: list[CALLBACK_TYPE] = []
@@ -105,15 +153,59 @@ class PlantRuntime:
         """Return the end of the snooze, if any."""
         return _parse(self._settings.get("snoozed_until"))
 
+    @property
+    def image_url(self) -> str | None:
+        """Return the species picture (OpenPlantbook or Plant Monitor)."""
+        info = self.config.species_info or {}
+        url = info.get("image_url")
+        return str(url) if url else None
+
+    def sources(self) -> dict[str, str]:
+        """Return {measurement key: source entity id} for assigned sensors."""
+        result = {}
+        for key, field_name, _ in MEASUREMENTS:
+            if entity_id := getattr(self.config, field_name):
+                result[key] = entity_id
+        return result
+
+    def entity_keys(self) -> list[str]:
+        """Return the unique id suffixes this plant should have."""
+        keys = list(PLANT_ENTITY_KEYS)
+        if self.config.moisture_sensor:
+            keys += ["dry_threshold", "wet_threshold"]
+        else:
+            keys.append("watering_interval")
+        return keys + list(self.sources())
+
+    def range_for(self, key: str) -> tuple[Range | None, str | None]:
+        """Return the target range of a measurement and where it comes from."""
+        if key == "soil_moisture":
+            low, high = self.thresholds()
+            custom = bool(self._settings.get("thresholds"))
+            return Range(low, high), "custom" if custom else "species"
+        if (own := _range_from(self.config.ranges.get(key))) is not None:
+            return own, "custom"
+        info = self.config.species_info or {}
+        if (opb := _range_from(info.get("ranges", {}).get(key))) is not None:
+            return opb, str(info.get("source", "openplantbook"))
+        if self.species is not None:
+            if key == "temperature":
+                return Range(self.species.temp_min, self.species.temp_max), "offline"
+            if key == "air_humidity":
+                return Range(self.species.humidity_min, None), "offline"
+        if key == "battery":
+            return Range(BATTERY_LOW, None), "default"
+        return None, None
+
     # ---- lifecycle ------------------------------------------------------
 
     @callback
     def async_start(self) -> None:
-        """Listen to the moisture sensor and arm the snooze timer."""
-        if self.config.moisture_sensor:
+        """Listen to all source sensors and arm the snooze timer."""
+        if sources := sorted(set(self.sources().values())):
             self._unsubs.append(
                 async_track_state_change_event(
-                    self.hass, [self.config.moisture_sensor], self._on_sensor_change
+                    self.hass, sources, self._on_sensor_change
                 )
             )
         self._arm_snooze_timer()
@@ -176,9 +268,68 @@ class PlantRuntime:
         )
         self._wet_since = result.wet_since
         self.state = result
+        self._update_measurements(result)
         for update in list(self._listeners):
             update()
         self.hub.async_notify()
+
+    def _read(self, entity_id: str) -> tuple[float | None, str | None]:
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return None, None
+        unit = state.attributes.get("unit_of_measurement")
+        try:
+            return float(state.state), unit
+        except ValueError:
+            return None, unit
+
+    def _update_measurements(self, status: PlantStatus) -> None:
+        sources = self.sources()
+        readings = {key: self._read(entity_id) for key, entity_id in sources.items()}
+        targets = {key: self.range_for(key) for key in sources}
+        ratings = rate_all(
+            {k: v for k, (v, _) in readings.items() if k != "soil_moisture"},
+            {k: r for k, (r, _) in targets.items() if r is not None},
+            self._ratings,
+        )
+        level = status.moisture_level
+        if "soil_moisture" in sources and level is not None:
+            if level is MoistureLevel.DRY:
+                ratings["soil_moisture"] = Rating.LOW
+            elif level is MoistureLevel.TOO_WET:
+                ratings["soil_moisture"] = Rating.HIGH
+            else:
+                ratings["soil_moisture"] = Rating.OK
+        self._ratings = ratings
+
+        hints: list[Reason] = []
+        measurements: dict[str, Measurement] = {}
+        for key, entity_id in sources.items():
+            value, unit = readings[key]
+            target, range_source = targets[key]
+            rating = ratings.get(key)
+            measurements[key] = Measurement(
+                key=key,
+                source=entity_id,
+                value=value,
+                unit=unit,
+                target=target,
+                range_source=range_source,
+                rating=rating,
+                level=level if key == "soil_moisture" else None,
+            )
+            if key == "soil_moisture" or rating in (None, Rating.OK):
+                continue
+            if target is None or value is None or rating is None:
+                continue
+            params: dict[str, float | str] = {"value": value}
+            if target.min is not None:
+                params["min"] = target.min
+            if target.max is not None:
+                params["max"] = target.max
+            hints.append(Reason(f"{key}_{rating.value}", params))
+        self.measurements = measurements
+        self.hints = tuple(hints)
 
     # ---- actions --------------------------------------------------------
 
@@ -333,6 +484,13 @@ class RootwiseHub:
         }
         self.storage.async_save_data()
         self.async_notify()
+
+    def expected_unique_ids(self) -> set[str]:
+        """Return the unique ids all current entities should have."""
+        ids = {f"{self.entry.entry_id}_{key}" for key in HUB_ENTITY_KEYS}
+        for plant_id, plant in self.plants.items():
+            ids |= {f"{plant_id}_{key}" for key in plant.entity_keys()}
+        return ids
 
     def plants_needing_water(self) -> list[PlantRuntime]:
         """Return plants that need water now."""

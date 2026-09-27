@@ -10,12 +10,28 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.rootwise.const import DOMAIN, SUBENTRY_PLANT
 
-MOISTURE = "sensor.monstera_soil_moisture"
-MOISTURE_ATTRS = {"device_class": "moisture", "unit_of_measurement": "%"}
+# Source sensors (as a soil probe and a room climate sensor would provide them)
+MOISTURE = "sensor.probe_soil_moisture"
+TEMPERATURE = "sensor.probe_temperature"
+BATTERY = "sensor.probe_battery"
+AIR_HUMIDITY = "sensor.room_humidity"
+
+SOURCES: dict[str, tuple[str, dict[str, str]]] = {
+    MOISTURE: ("38", {"device_class": "moisture", "unit_of_measurement": "%"}),
+    TEMPERATURE: (
+        "22.46",
+        {"device_class": "temperature", "unit_of_measurement": "°C"},
+    ),
+    BATTERY: ("87", {"device_class": "battery", "unit_of_measurement": "%"}),
+    AIR_HUMIDITY: ("55", {"device_class": "humidity", "unit_of_measurement": "%"}),
+}
 
 MONSTERA: dict[str, Any] = {
     "species": "monstera_deliciosa",
     "moisture_sensor": MOISTURE,
+    "temperature_sensor": TEMPERATURE,
+    "humidity_sensor": AIR_HUMIDITY,
+    "battery_sensor": BATTERY,
     "pot_diameter": 24,
     "pot_material": "plastic",
     "drainage": True,
@@ -41,26 +57,43 @@ def plant(title: str, data: dict[str, Any], unique_id: str | None = None):
 
 
 @pytest.fixture
-def set_moisture(hass: HomeAssistant) -> Callable[[str], None]:
-    """Set the Monstera's moisture sensor state."""
+def set_state(hass: HomeAssistant) -> Callable[[str, str], None]:
+    """Set a source sensor's state, keeping its attributes."""
 
-    def _set(value: str) -> None:
-        hass.states.async_set(MOISTURE, value, MOISTURE_ATTRS)
+    def _set(entity_id: str, value: str) -> None:
+        hass.states.async_set(entity_id, value, SOURCES[entity_id][1])
 
     return _set
 
 
 @pytest.fixture
-async def entry(hass: HomeAssistant, set_moisture) -> MockConfigEntry:
-    """A loaded Rootwise entry with a Monstera (sensor) and an Efeutute (none)."""
-    set_moisture("38")
+def set_moisture(set_state) -> Callable[[str], None]:
+    """Set the Monstera's moisture sensor state."""
+
+    def _set(value: str) -> None:
+        set_state(MOISTURE, value)
+
+    return _set
+
+
+@pytest.fixture
+def monstera_data() -> dict[str, Any]:
+    """Subentry data of the Monstera (tests may change it before setup)."""
+    return dict(MONSTERA)
+
+
+@pytest.fixture
+async def entry(hass: HomeAssistant, monstera_data) -> MockConfigEntry:
+    """A loaded Rootwise entry with a Monstera (sensors) and an Efeutute (none)."""
+    for entity_id, (value, attrs) in SOURCES.items():
+        hass.states.async_set(entity_id, value, attrs)
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         title="Rootwise",
         data={},
         options={},
         subentries_data=[
-            plant("Monstera", MONSTERA, MOISTURE),
+            plant("Monstera", monstera_data, MOISTURE),
             plant("Efeutute", EFEUTUTE),
         ],
     )

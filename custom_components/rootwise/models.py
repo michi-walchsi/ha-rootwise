@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from homeassistant.config_entries import ConfigSubentry
@@ -19,7 +19,9 @@ from .const import (
     CONF_MOISTURE_SENSOR,
     CONF_POT_DIAMETER,
     CONF_POT_MATERIAL,
+    CONF_RANGES,
     CONF_SPECIES,
+    CONF_SPECIES_INFO,
     CONF_TEMPERATURE_SENSOR,
     CONF_WINDOW,
 )
@@ -44,6 +46,8 @@ class PlantConfig:
     drainage: bool
     window: str
     location: str
+    species_info: Mapping[str, Any] | None = None
+    ranges: Mapping[str, Mapping[str, float | None]] = field(default_factory=dict)
 
     @classmethod
     def from_subentry(cls, subentry: ConfigSubentry) -> PlantConfig:
@@ -71,4 +75,6 @@ class PlantConfig:
             drainage=bool(data.get(CONF_DRAINAGE, True)),
             window=str(data.get(CONF_WINDOW, "none")),
             location=str(data.get(CONF_LOCATION, "indoor")),
+            species_info=data.get(CONF_SPECIES_INFO) or None,
+            ranges=data.get(CONF_RANGES) or {},
         )

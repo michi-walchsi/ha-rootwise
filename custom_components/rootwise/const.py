@@ -76,3 +76,35 @@ DEFAULT_INTERVAL: Final = (7.0, 12.0)  # summer, winter days for unknown species
 
 # Generated to-do summaries in the language of the Home Assistant instance
 TODO_WATER_SUMMARY: Final = {"de": "{name} gießen", "en": "Water {name}"}
+
+# Measurements mirrored onto the plant device: (key, source field, device class)
+MEASUREMENTS: Final[tuple[tuple[str, str, str], ...]] = (
+    ("soil_moisture", CONF_MOISTURE_SENSOR, "moisture"),
+    ("temperature", CONF_TEMPERATURE_SENSOR, "temperature"),
+    ("air_humidity", CONF_HUMIDITY_SENSOR, "humidity"),
+    ("illuminance", CONF_ILLUMINANCE_SENSOR, "illuminance"),
+    ("conductivity", CONF_CONDUCTIVITY_SENSOR, "conductivity"),
+    ("battery", CONF_BATTERY_SENSOR, "battery"),
+)
+BATTERY_LOW: Final = 15.0
+MIRROR_THROTTLE: Final = timedelta(seconds=60)
+
+# Subentry data written by the species search / Plant Monitor import (optional)
+CONF_SPECIES_INFO: Final = "species_info"
+CONF_RANGES: Final = "ranges"
+
+# Entities per plant (unique id suffixes), used to clean up leftovers
+PLANT_ENTITY_KEYS: Final[tuple[str, ...]] = (
+    "status",
+    "last_watered",
+    "needs_water",
+    "problem",
+    CARE_WATERED,
+    CARE_FERTILIZED,
+    "snooze",
+)
+HUB_ENTITY_KEYS: Final[tuple[str, ...]] = (
+    "plants_needing_water",
+    "vacation_mode",
+    "plant_care",
+)

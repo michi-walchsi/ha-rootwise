@@ -31,11 +31,32 @@
       }
     },
     "sensor": {
+      "air_humidity": {
+        "default": "mdi:water-opacity"
+      },
+      "conductivity": {
+        "default": "mdi:sprout-outline"
+      },
+      "illuminance": {
+        "default": "mdi:white-balance-sunny"
+      },
       "last_watered": {
         "default": "mdi:watering-can"
       },
       "plants_needing_water": {
         "default": "mdi:watering-can-outline"
+      },
+      "soil_moisture": {
+        "default": "mdi:water-percent",
+        "state_attributes": {
+          "level": {
+            "default": "mdi:water-percent",
+            "state": {
+              "dry": "mdi:water-percent-alert",
+              "fresh": "mdi:water"
+            }
+          }
+        }
       },
       "status": {
         "default": "mdi:sprout",

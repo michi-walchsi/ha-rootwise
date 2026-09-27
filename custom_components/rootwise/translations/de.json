@@ -118,12 +118,187 @@
       }
     },
     "sensor": {
+      "air_humidity": {
+        "name": "Luftfeuchte",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Bereich aus",
+            "state": {
+              "custom": "Deine Einstellung",
+              "default": "Standard",
+              "offline": "Eingebaute Artenliste",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Gießstil der Art"
+            }
+          },
+          "rating": {
+            "name": "Bewertung",
+            "state": {
+              "high": "Zu hoch",
+              "low": "Zu niedrig",
+              "ok": "Passt"
+            }
+          },
+          "source": {
+            "name": "Quellsensor"
+          }
+        }
+      },
+      "battery": {
+        "name": "Batterie",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Bereich aus",
+            "state": {
+              "custom": "Deine Einstellung",
+              "default": "Standard",
+              "offline": "Eingebaute Artenliste",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Gießstil der Art"
+            }
+          },
+          "rating": {
+            "name": "Bewertung",
+            "state": {
+              "high": "Zu hoch",
+              "low": "Zu niedrig",
+              "ok": "Passt"
+            }
+          },
+          "source": {
+            "name": "Quellsensor"
+          }
+        }
+      },
+      "conductivity": {
+        "name": "Düngerstand",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Bereich aus",
+            "state": {
+              "custom": "Deine Einstellung",
+              "default": "Standard",
+              "offline": "Eingebaute Artenliste",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Gießstil der Art"
+            }
+          },
+          "rating": {
+            "name": "Bewertung",
+            "state": {
+              "high": "Zu hoch",
+              "low": "Zu niedrig",
+              "ok": "Passt"
+            }
+          },
+          "source": {
+            "name": "Quellsensor"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Licht",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Bereich aus",
+            "state": {
+              "custom": "Deine Einstellung",
+              "default": "Standard",
+              "offline": "Eingebaute Artenliste",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Gießstil der Art"
+            }
+          },
+          "rating": {
+            "name": "Bewertung",
+            "state": {
+              "high": "Zu hoch",
+              "low": "Zu niedrig",
+              "ok": "Passt"
+            }
+          },
+          "source": {
+            "name": "Quellsensor"
+          }
+        }
+      },
       "last_watered": {
         "name": "Zuletzt gegossen"
       },
       "plants_needing_water": {
         "name": "Pflanzen brauchen Wasser",
         "unit_of_measurement": "Pflanzen"
+      },
+      "soil_moisture": {
+        "name": "Bodenfeuchte",
+        "state_attributes": {
+          "level": {
+            "name": "Stufe",
+            "state": {
+              "dry": "Trocken",
+              "drying": "Bald gießen",
+              "fresh": "Nass, frisch gegossen",
+              "ok": "Passt",
+              "too_wet": "Zu nass"
+            }
+          },
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Bereich aus",
+            "state": {
+              "custom": "Deine Einstellung",
+              "default": "Standard",
+              "offline": "Eingebaute Artenliste",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Gießstil der Art"
+            }
+          },
+          "rating": {
+            "name": "Bewertung",
+            "state": {
+              "high": "Zu hoch",
+              "low": "Zu niedrig",
+              "ok": "Passt"
+            }
+          },
+          "source": {
+            "name": "Quellsensor"
+          }
+        }
       },
       "status": {
         "name": "Status",
@@ -133,6 +308,54 @@
           "sensor_offline": "Sensor offline",
           "thirsty": "Durstig",
           "too_wet": "Zu nass"
+        },
+        "state_attributes": {
+          "moisture_level": {
+            "name": "Bodenfeuchte",
+            "state": {
+              "dry": "Trocken",
+              "drying": "Bald gießen",
+              "fresh": "Nass, frisch gegossen",
+              "ok": "Passt",
+              "too_wet": "Zu nass"
+            }
+          },
+          "reasons": {
+            "name": "Gründe"
+          }
+        }
+      },
+      "temperature": {
+        "name": "Temperatur",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Bereich aus",
+            "state": {
+              "custom": "Deine Einstellung",
+              "default": "Standard",
+              "offline": "Eingebaute Artenliste",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Gießstil der Art"
+            }
+          },
+          "rating": {
+            "name": "Bewertung",
+            "state": {
+              "high": "Zu hoch",
+              "low": "Zu niedrig",
+              "ok": "Passt"
+            }
+          },
+          "source": {
+            "name": "Quellsensor"
+          }
         }
       }
     },

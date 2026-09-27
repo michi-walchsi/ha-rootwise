@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 
 from custom_components.rootwise.engine.status import (
+    MoistureLevel,
     MoistureReading,
     PlantInput,
     Status,
@@ -137,3 +138,33 @@ def test_needs_water_returns_after_grace_period() -> None:
         _input(moisture=_sensor(11), last_watered=NOW - timedelta(hours=3, minutes=1))
     )
     assert result.needs_water is True
+
+
+def test_moisture_level_dry_when_thirsty() -> None:
+    assert evaluate(_input(moisture=_sensor(11))).moisture_level is MoistureLevel.DRY
+
+
+def test_moisture_level_drying_in_lowest_quarter() -> None:
+    # low 20, high 60 -> lowest quarter of the band is below 30
+    assert evaluate(_input(moisture=_sensor(27))).moisture_level is MoistureLevel.DRYING
+
+
+def test_moisture_level_ok_inside_band() -> None:
+    assert evaluate(_input(moisture=_sensor(45))).moisture_level is MoistureLevel.OK
+
+
+def test_moisture_level_fresh_after_watering() -> None:
+    result = evaluate(_input(moisture=_sensor(77), wet_since=NOW - timedelta(hours=20)))
+    assert result.status is Status.OK
+    assert result.moisture_level is MoistureLevel.FRESH
+    assert result.problem is False
+
+
+def test_moisture_level_too_wet_after_48_hours() -> None:
+    result = evaluate(_input(moisture=_sensor(77), wet_since=NOW - timedelta(hours=49)))
+    assert result.moisture_level is MoistureLevel.TOO_WET
+
+
+def test_moisture_level_none_without_sensor_reading() -> None:
+    assert evaluate(_input()).moisture_level is None
+    assert evaluate(_input(moisture=_sensor(None))).moisture_level is None

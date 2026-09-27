@@ -118,12 +118,187 @@
       }
     },
     "sensor": {
+      "air_humidity": {
+        "name": "Air humidity",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Range from",
+            "state": {
+              "custom": "Your setting",
+              "default": "Default",
+              "offline": "Built-in species list",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Watering style of the species"
+            }
+          },
+          "rating": {
+            "name": "Rating",
+            "state": {
+              "high": "Too high",
+              "low": "Too low",
+              "ok": "OK"
+            }
+          },
+          "source": {
+            "name": "Source sensor"
+          }
+        }
+      },
+      "battery": {
+        "name": "Battery",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Range from",
+            "state": {
+              "custom": "Your setting",
+              "default": "Default",
+              "offline": "Built-in species list",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Watering style of the species"
+            }
+          },
+          "rating": {
+            "name": "Rating",
+            "state": {
+              "high": "Too high",
+              "low": "Too low",
+              "ok": "OK"
+            }
+          },
+          "source": {
+            "name": "Source sensor"
+          }
+        }
+      },
+      "conductivity": {
+        "name": "Fertilizer level",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Range from",
+            "state": {
+              "custom": "Your setting",
+              "default": "Default",
+              "offline": "Built-in species list",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Watering style of the species"
+            }
+          },
+          "rating": {
+            "name": "Rating",
+            "state": {
+              "high": "Too high",
+              "low": "Too low",
+              "ok": "OK"
+            }
+          },
+          "source": {
+            "name": "Source sensor"
+          }
+        }
+      },
+      "illuminance": {
+        "name": "Light",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Range from",
+            "state": {
+              "custom": "Your setting",
+              "default": "Default",
+              "offline": "Built-in species list",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Watering style of the species"
+            }
+          },
+          "rating": {
+            "name": "Rating",
+            "state": {
+              "high": "Too high",
+              "low": "Too low",
+              "ok": "OK"
+            }
+          },
+          "source": {
+            "name": "Source sensor"
+          }
+        }
+      },
       "last_watered": {
         "name": "Last watered"
       },
       "plants_needing_water": {
         "name": "Plants needing water",
         "unit_of_measurement": "plants"
+      },
+      "soil_moisture": {
+        "name": "Soil moisture",
+        "state_attributes": {
+          "level": {
+            "name": "Level",
+            "state": {
+              "dry": "Dry",
+              "drying": "Water soon",
+              "fresh": "Wet, freshly watered",
+              "ok": "Just right",
+              "too_wet": "Too wet"
+            }
+          },
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Range from",
+            "state": {
+              "custom": "Your setting",
+              "default": "Default",
+              "offline": "Built-in species list",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Watering style of the species"
+            }
+          },
+          "rating": {
+            "name": "Rating",
+            "state": {
+              "high": "Too high",
+              "low": "Too low",
+              "ok": "OK"
+            }
+          },
+          "source": {
+            "name": "Source sensor"
+          }
+        }
       },
       "status": {
         "name": "Status",
@@ -133,6 +308,54 @@
           "sensor_offline": "Sensor offline",
           "thirsty": "Thirsty",
           "too_wet": "Too wet"
+        },
+        "state_attributes": {
+          "moisture_level": {
+            "name": "Soil moisture",
+            "state": {
+              "dry": "Dry",
+              "drying": "Water soon",
+              "fresh": "Wet, freshly watered",
+              "ok": "Just right",
+              "too_wet": "Too wet"
+            }
+          },
+          "reasons": {
+            "name": "Reasons"
+          }
+        }
+      },
+      "temperature": {
+        "name": "Temperature",
+        "state_attributes": {
+          "max": {
+            "name": "Maximum"
+          },
+          "min": {
+            "name": "Minimum"
+          },
+          "range_source": {
+            "name": "Range from",
+            "state": {
+              "custom": "Your setting",
+              "default": "Default",
+              "offline": "Built-in species list",
+              "openplantbook": "OpenPlantbook",
+              "plant_monitor": "Plant Monitor",
+              "species": "Watering style of the species"
+            }
+          },
+          "rating": {
+            "name": "Rating",
+            "state": {
+              "high": "Too high",
+              "low": "Too low",
+              "ok": "OK"
+            }
+          },
+          "source": {
+            "name": "Source sensor"
+          }
         }
       }
     },

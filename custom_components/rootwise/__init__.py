@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 
 from .config_flow import async_get_species_db
@@ -40,6 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) -> 
     await storage.async_load()
     hub = RootwiseHub(hass, entry, storage, await async_get_species_db(hass))
     entry.runtime_data = hub
+    _async_remove_orphans(hass, entry, hub)
     # Evaluate before the entities exist so they start with a real state.
     for plant in hub.plants.values():
         plant.async_evaluate()
@@ -60,3 +61,14 @@ async def async_unload_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) ->
 
 async def _async_reload(hass: HomeAssistant, entry: RootwiseConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+def _async_remove_orphans(
+    hass: HomeAssistant, entry: RootwiseConfigEntry, hub: RootwiseHub
+) -> None:
+    """Drop entities left over from sensors or options that no longer exist."""
+    expected = hub.expected_unique_ids()
+    ent_reg = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        if entity.unique_id not in expected:
+            ent_reg.async_remove(entity.entity_id)
