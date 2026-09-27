@@ -29,7 +29,10 @@ class HAWebSocket:
         self._next_id = 1
 
     async def __aenter__(self) -> HAWebSocket:
-        self._session = aiohttp.ClientSession()
+        # System resolver: aiodns cannot resolve mDNS names like homeassistant.local
+        self._session = aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(resolver=aiohttp.ThreadedResolver())
+        )
         self._ws = await self._session.ws_connect(self._url, max_msg_size=0)
         await self._ws.receive_json()  # auth_required
         await self._ws.send_json({"type": "auth", "access_token": self._token})

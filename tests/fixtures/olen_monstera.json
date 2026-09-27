@@ -1,0 +1,359 @@
+[
+  {
+    "entity_id": "number.monstera_max_bodenfeuchtigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-moisture",
+    "translation_key": "max_moisture",
+    "original_name": "Max. Bodenfeuchtigkeit",
+    "state": "60",
+    "attributes": {
+      "unit_of_measurement": "%",
+      "device_class": "moisture threshold",
+      "friendly_name": "Monstera Max. Bodenfeuchtigkeit"
+    }
+  },
+  {
+    "entity_id": "number.monstera_min_bodenfeuchtigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-moisture",
+    "translation_key": "min_moisture",
+    "original_name": "Min. Bodenfeuchtigkeit",
+    "state": "15",
+    "attributes": {
+      "unit_of_measurement": "%",
+      "device_class": "moisture threshold",
+      "friendly_name": "Monstera Min. Bodenfeuchtigkeit"
+    }
+  },
+  {
+    "entity_id": "number.monstera_max_temperatur",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-temperature",
+    "translation_key": "max_temperature",
+    "original_name": "Max. Temperatur",
+    "state": "32",
+    "attributes": {
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Monstera Max. Temperatur"
+    }
+  },
+  {
+    "entity_id": "number.monstera_min_temperatur",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-temperature",
+    "translation_key": "min_temperature",
+    "original_name": "Min. Temperatur",
+    "state": "12",
+    "attributes": {
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Monstera Min. Temperatur"
+    }
+  },
+  {
+    "entity_id": "number.monstera_max_beleuchtungsstarke",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-illuminance",
+    "translation_key": "max_illuminance",
+    "original_name": "Max. Beleuchtungsstärke",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_min_beleuchtungsstarke",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-illuminance",
+    "translation_key": "min_illuminance",
+    "original_name": "Min. Beleuchtungsstärke",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_max_leitfahigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-conductivity",
+    "translation_key": "max_conductivity",
+    "original_name": "Max. Leitfähigkeit",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_min_leitfahigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-conductivity",
+    "translation_key": "min_conductivity",
+    "original_name": "Min. Leitfähigkeit",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_max_luftfeuchtigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-humidity",
+    "translation_key": "max_humidity",
+    "original_name": "Max. Luftfeuchtigkeit",
+    "state": "85",
+    "attributes": {
+      "unit_of_measurement": "%",
+      "device_class": "humidity threshold",
+      "friendly_name": "Monstera Max. Luftfeuchtigkeit"
+    }
+  },
+  {
+    "entity_id": "number.monstera_min_luftfeuchtigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-humidity",
+    "translation_key": "min_humidity",
+    "original_name": "Min. Luftfeuchtigkeit",
+    "state": "30",
+    "attributes": {
+      "unit_of_measurement": "%",
+      "device_class": "humidity threshold",
+      "friendly_name": "Monstera Min. Luftfeuchtigkeit"
+    }
+  },
+  {
+    "entity_id": "number.monstera_max_co2",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-co2",
+    "translation_key": "max_co2",
+    "original_name": "Max. CO2",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_min_co2",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-co2",
+    "translation_key": "min_co2",
+    "original_name": "Min. CO2",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_max_bodentemperatur",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-soil-temperature",
+    "translation_key": "max_soil_temperature",
+    "original_name": "Max. Bodentemperatur",
+    "state": "40",
+    "attributes": {
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Monstera Max. Bodentemperatur"
+    }
+  },
+  {
+    "entity_id": "number.monstera_min_bodentemperatur",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-soil-temperature",
+    "translation_key": "min_soil_temperature",
+    "original_name": "Min. Bodentemperatur",
+    "state": "10",
+    "attributes": {
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Monstera Min. Bodentemperatur"
+    }
+  },
+  {
+    "entity_id": "number.monstera_max_dli",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-dli",
+    "translation_key": "max_dli",
+    "original_name": "Max. DLI",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_min_dli",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-dli",
+    "translation_key": "min_dli",
+    "original_name": "Min. DLI",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "number.monstera_max_vpd",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-max-vpd",
+    "translation_key": "max_vpd",
+    "original_name": "Max. VPD",
+    "state": "1.6",
+    "attributes": {
+      "unit_of_measurement": "kPa",
+      "device_class": "vpd threshold",
+      "friendly_name": "Monstera Max. VPD"
+    }
+  },
+  {
+    "entity_id": "number.monstera_min_vpd",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-min-vpd",
+    "translation_key": "min_vpd",
+    "original_name": "Min. VPD",
+    "state": "0.4",
+    "attributes": {
+      "unit_of_measurement": "kPa",
+      "device_class": "vpd threshold",
+      "friendly_name": "Monstera Min. VPD"
+    }
+  },
+  {
+    "entity_id": "number.monstera_lux_zu_ppfd_faktor",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-lux-to-ppfd",
+    "translation_key": "lux_to_ppfd",
+    "original_name": "Lux-zu-PPFD-Faktor",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_beleuchtungsstarke",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-illuminance",
+    "translation_key": "illuminance",
+    "original_name": "Beleuchtungsstärke",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_leitfahigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-conductivity",
+    "translation_key": "conductivity",
+    "original_name": "Leitfähigkeit",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_bodenfeuchtigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-moisture",
+    "translation_key": "moisture",
+    "original_name": "Bodenfeuchtigkeit",
+    "state": "76.89",
+    "attributes": {
+      "external_sensor": "sensor.0x00124b0000000001_soil_moisture",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "friendly_name": "Monstera Bodenfeuchtigkeit"
+    }
+  },
+  {
+    "entity_id": "sensor.monstera_temperatur",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-temperature",
+    "translation_key": "temperature",
+    "original_name": "Temperatur",
+    "state": "26.3",
+    "attributes": {
+      "external_sensor": "sensor.0x00124b0000000002_temperature_2",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Monstera Temperatur"
+    }
+  },
+  {
+    "entity_id": "sensor.monstera_luftfeuchtigkeit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-humidity",
+    "translation_key": "humidity",
+    "original_name": "Luftfeuchtigkeit",
+    "state": "41.1",
+    "attributes": {
+      "external_sensor": "sensor.0x00124b0000000002_humidity_2",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "friendly_name": "Monstera Luftfeuchtigkeit"
+    }
+  },
+  {
+    "entity_id": "sensor.monstera_co2",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-co2",
+    "translation_key": "co2",
+    "original_name": "CO2",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_bodentemperatur",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-soil-temperature",
+    "translation_key": "soil_temperature",
+    "original_name": "Bodentemperatur",
+    "state": "24.82",
+    "attributes": {
+      "external_sensor": "sensor.0x00124b0000000001_temperature",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Monstera Bodentemperatur"
+    }
+  },
+  {
+    "entity_id": "sensor.monstera_ppfd",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-ppfd",
+    "translation_key": "ppfd",
+    "original_name": "PPFD",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_total_ppfd_mol_integral",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-ppfd-integral",
+    "translation_key": "total_light_integral",
+    "original_name": "Total ppfd (mol) Integral",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_dli",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-dli",
+    "translation_key": "dli",
+    "original_name": "dli",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_dli_24h",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-dli-24h",
+    "translation_key": "dli_24h",
+    "original_name": "dli 24h",
+    "state": null,
+    "attributes": {}
+  },
+  {
+    "entity_id": "sensor.monstera_dampfdruckdefizit",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R-current-vpd",
+    "translation_key": "vpd",
+    "original_name": "Dampfdruckdefizit",
+    "state": "2.02",
+    "attributes": {
+      "unit_of_measurement": "kPa",
+      "device_class": "vpd",
+      "friendly_name": "Monstera Dampfdruckdefizit"
+    }
+  },
+  {
+    "entity_id": "plant.monstera",
+    "platform": "plant",
+    "unique_id": "01M2JV48437CF9XWC51DHNS20R",
+    "translation_key": null,
+    "original_name": "",
+    "state": "problem",
+    "attributes": {
+      "species": "Monstera deliciosa",
+      "device_class": "plant",
+      "entity_picture": "https://opb-img.plantbook.io/monstera%20deliciosa.jpg",
+      "friendly_name": "Monstera"
+    }
+  }
+]

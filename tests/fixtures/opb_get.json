@@ -1,0 +1,109 @@
+{
+  "pid": "monstera deliciosa",
+  "display_pid": "Monstera deliciosa",
+  "alias": "Monstera deliciosa Verigata",
+  "category": "Araceae, Monstera",
+  "max_light_mmol": 3400,
+  "min_light_mmol": 1500,
+  "max_light_lux": 15000,
+  "min_light_lux": 800,
+  "max_temp": 32,
+  "min_temp": 12,
+  "min_temp_survival": null,
+  "max_env_humid": 85,
+  "min_env_humid": 30,
+  "max_soil_moist": 60,
+  "min_soil_moist": 15,
+  "max_soil_ec": 2000,
+  "min_soil_ec": 350,
+  "origin": "Mexico",
+  "image_url": "https://opb-img.plantbook.io/monstera%20deliciosa.jpg",
+  "image_source": "",
+  "image_license": "",
+  "common_names": [
+    {
+      "name": "Cheese Plant",
+      "language_code": "en"
+    },
+    {
+      "name": "Swiss Cheese Plant",
+      "language_code": "en"
+    },
+    {
+      "name": "Monstera deliciosa",
+      "language_code": "pl"
+    },
+    {
+      "name": "Monstera dziurawa",
+      "language_code": "pl"
+    },
+    {
+      "name": "Монстера деликатесная",
+      "language_code": "ru"
+    },
+    {
+      "name": "Monstera deliciosa",
+      "language_code": "fr"
+    },
+    {
+      "name": "Monstera télé",
+      "language_code": "fr"
+    },
+    {
+      "name": "Monstera",
+      "language_code": "de"
+    },
+    {
+      "name": "Fensterblatt",
+      "language_code": "de"
+    },
+    {
+      "name": "Monstera deliciosa Verigata",
+      "language_code": "de"
+    },
+    {
+      "name": "Monstera deliciosa",
+      "language_code": "de"
+    },
+    {
+      "name": "Monstera",
+      "language_code": "en"
+    },
+    {
+      "name": "Deve Tabanı",
+      "language_code": "tr"
+    },
+    {
+      "name": "Μονστέρα",
+      "language_code": "el"
+    },
+    {
+      "name": "مونستيرا أدانسوني",
+      "language_code": "ar"
+    },
+    {
+      "name": "Monstera",
+      "language_code": "no"
+    },
+    {
+      "name": "Monstera Zimmer",
+      "language_code": "de"
+    },
+    {
+      "name": "Monstera",
+      "language_code": "sv"
+    },
+    {
+      "name": "könnyezőpálma",
+      "language_code": "hu"
+    },
+    {
+      "name": "Monstera deliciosa",
+      "language_code": "en"
+    }
+  ],
+  "max_dli": 12.2,
+  "min_dli": 5.4,
+  "timestamp": "2026-09-27T14:37:37.468502",
+  "_fetched_includes": []
+}
