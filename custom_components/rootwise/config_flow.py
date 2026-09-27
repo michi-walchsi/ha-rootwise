@@ -61,6 +61,7 @@ from .const import (
     WINDOWS,
 )
 from .hub import species_range
+from .importer import ImportedPlant, find_existing, merge, plant_monitor_plants
 from .opb import OpbError, async_search, async_species_info, opb_available
 from .sources import mirror_entities, resolve
 from .species.db import SpeciesDb
@@ -257,6 +258,8 @@ class PlantSubentryFlow(ConfigSubentryFlow):
         self._data: dict[str, Any] = {}
         self._query = ""
         self._hits: list[tuple[str, str]] = []
+        self._imported: ImportedPlant | None = None
+        self._merge_into: ConfigSubentry | None = None
 
     @property
     def _reconfiguring(self) -> bool:
@@ -265,12 +268,69 @@ class PlantSubentryFlow(ConfigSubentryFlow):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Start: search OpenPlantbook if it is set up, else the basics."""
+        """Start: OpenPlantbook search or Plant Monitor import, if available."""
+        options = []
         if opb_available(self.hass):
+            options.append("search")
+        if plant_monitor_plants(self.hass, await async_get_species_db(self.hass)):
+            options.append("import")
+        if options:
             return self.async_show_menu(
-                step_id="user", menu_options=["search", "basics"]
+                step_id="user", menu_options=[*options, "basics"]
             )
         return await self.async_step_basics()
+
+    async def async_step_import(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Pick a Plant Monitor plant; one Rootwise already has is merged."""
+        plants = plant_monitor_plants(self.hass, await async_get_species_db(self.hass))
+        if user_input is not None:
+            plant = next(p for p in plants if p.entity_id == user_input["plant"])
+            if existing := find_existing(self._get_entry(), plant):
+                self._imported, self._merge_into = plant, existing
+                return await self.async_step_merge()
+            self._name = plant.name
+            self._data.update(plant.data)
+            return await self.async_step_basics()
+        options = [SelectOptionDict(value=p.entity_id, label=p.name) for p in plants]
+        return self.async_show_form(
+            step_id="import",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("plant"): SelectSelector(
+                        SelectSelectorConfig(
+                            options=options, mode=SelectSelectorMode.LIST
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_merge(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Merge the import into the Rootwise plant that has its soil sensor."""
+        plant, existing = self._imported, self._merge_into
+        if plant is None or existing is None:
+            return self.async_abort(reason="unknown")
+        if user_input is None:
+            return self.async_show_form(
+                step_id="merge",
+                data_schema=vol.Schema({}),
+                description_placeholders={
+                    "plant": plant.name,
+                    "rootwise_plant": existing.title,
+                },
+            )
+        data = merge(self.hass, existing.data, plant)
+        self.hass.config_entries.async_update_subentry(
+            self._get_entry(),
+            existing,
+            data=data,
+            unique_id=data.get(CONF_MOISTURE_SENSOR),
+        )
+        return self.async_abort(reason="merged")
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
@@ -388,14 +448,17 @@ class PlantSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             self._merge(user_input, SENSOR_KEYS)
             return await self.async_step_ranges()
-        if self._reconfiguring:
-            values = {k: self._data[k] for k in SENSOR_KEYS if k in self._data}
-        else:
-            values = suggest_sensors(
-                self.hass,
-                self._data.get(CONF_MOISTURE_SENSOR),
-                self._data.get(CONF_AREA),
-            )
+        values = {k: self._data[k] for k in SENSOR_KEYS if k in self._data}
+        if not self._reconfiguring:
+            # Suggestions fill what an import did not bring.
+            values = {
+                **suggest_sensors(
+                    self.hass,
+                    self._data.get(CONF_MOISTURE_SENSOR),
+                    self._data.get(CONF_AREA),
+                ),
+                **values,
+            }
         return self.async_show_form(
             step_id="sensors",
             data_schema=self.add_suggested_values_to_schema(

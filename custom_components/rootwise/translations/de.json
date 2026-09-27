@@ -13,7 +13,9 @@
   "config_subentries": {
     "plant": {
       "abort": {
-        "reconfigure_successful": "Die Pflanze wurde geändert."
+        "merged": "Zusammengeführt. Wenn Rootwise für dich passt, kannst du die Pflanze aus Plant Monitor entfernen.",
+        "reconfigure_successful": "Die Pflanze wurde geändert.",
+        "unknown": "Da ist etwas schiefgelaufen. Bitte starte neu."
       },
       "entry_type": "Pflanze",
       "error": {
@@ -40,6 +42,17 @@
           },
           "description": "Name, Raum und Bodensensor.",
           "title": "Pflanze"
+        },
+        "import": {
+          "data": {
+            "plant": "Pflanze"
+          },
+          "description": "Rootwise übernimmt Name, Raum, Art, Bild, die echten Sensoren und die Zielbereiche. Plant Monitor läuft weiter, bis du ihn entfernst.",
+          "title": "Aus Plant Monitor übernehmen"
+        },
+        "merge": {
+          "description": "{rootwise_plant} nutzt schon den Bodensensor von „{plant}“ aus Plant Monitor. Rootwise stellt auf die echten Sensoren um und ergänzt Art, Bild und Zielbereiche, wo sie fehlen. Journal, Schwellen, Topf und deine eigene Sensorwahl bleiben.",
+          "title": "Mit {rootwise_plant} zusammenführen"
         },
         "pick": {
           "data": {
@@ -107,9 +120,10 @@
           "title": "Weitere Sensoren"
         },
         "user": {
-          "description": "Finde die Art in OpenPlantbook: Du bekommst ein Bild, den deutschen Namen und Zielbereiche für Temperatur, Luftfeuchte und Licht.",
+          "description": "Wie möchtest du die Pflanze anlegen? OpenPlantbook bringt Bild, deutschen Namen und Zielbereiche; der Import übernimmt eine Pflanze, die du schon in Plant Monitor hast.",
           "menu_options": {
             "basics": "Ohne OpenPlantbook weiter",
+            "import": "Aus Plant Monitor übernehmen",
             "search": "In OpenPlantbook suchen"
           },
           "title": "Pflanze hinzufügen"

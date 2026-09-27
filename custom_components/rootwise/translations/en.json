@@ -13,7 +13,9 @@
   "config_subentries": {
     "plant": {
       "abort": {
-        "reconfigure_successful": "The plant was updated."
+        "merged": "Merged. Once you are happy with Rootwise, you can remove the plant from Plant Monitor.",
+        "reconfigure_successful": "The plant was updated.",
+        "unknown": "Something went wrong. Please start again."
       },
       "entry_type": "Plant",
       "error": {
@@ -40,6 +42,17 @@
           },
           "description": "Name, room and soil sensor.",
           "title": "Plant"
+        },
+        "import": {
+          "data": {
+            "plant": "Plant"
+          },
+          "description": "Rootwise takes over name, room, species, picture, the real sensors and the target ranges. Plant Monitor keeps running until you remove it.",
+          "title": "Import from Plant Monitor"
+        },
+        "merge": {
+          "description": "{rootwise_plant} already uses the soil sensor of “{plant}” in Plant Monitor. Rootwise switches it to the real sensors and adds species, picture and target ranges where they are missing. Journal, thresholds, pot and your own sensor choices stay.",
+          "title": "Merge into {rootwise_plant}"
         },
         "pick": {
           "data": {
@@ -107,9 +120,10 @@
           "title": "Further sensors"
         },
         "user": {
-          "description": "Find the species in OpenPlantbook: you get a picture, the German or English name and target ranges for temperature, air humidity and light.",
+          "description": "How would you like to add the plant? OpenPlantbook brings a picture, names and target ranges; an import takes over a plant you already have in Plant Monitor.",
           "menu_options": {
             "basics": "Continue without OpenPlantbook",
+            "import": "Import from Plant Monitor",
             "search": "Search OpenPlantbook"
           },
           "title": "Add plant"
