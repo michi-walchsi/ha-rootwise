@@ -3,11 +3,13 @@
 from datetime import timedelta
 
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
+    async_capture_events,
     async_fire_time_changed,
 )
 
@@ -158,3 +160,23 @@ async def test_orphaned_entities_are_removed(
     await hass.async_block_till_done()
     assert ent_reg.async_get(ghost.entity_id) is None
     assert ent_reg.async_get("number.monstera_dry_threshold") is not None
+
+
+async def test_busy_sensor_writes_at_most_once_a_minute(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    set_state,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A temperature probe reporting every 10 s for an hour (SD card load)."""
+    events = async_capture_events(hass, EVENT_STATE_CHANGED)
+    for step in range(360):
+        set_state(TEMPERATURE, f"{22 + (step % 7) / 10:.2f}")
+        freezer.tick(timedelta(seconds=10))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    writes = [e for e in events if e.data["entity_id"] == "sensor.monstera_temperature"]
+    assert 30 <= len(writes) <= 61  # changes do arrive, just not every 10 s
+    # Nothing else of the plant is rewritten on every reading.
+    status = [e for e in events if e.data["entity_id"] == "sensor.monstera_status"]
+    assert len(status) == 0

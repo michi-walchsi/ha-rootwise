@@ -94,7 +94,10 @@ const en: Strings = {
   "tile.never": "never watered",
   "editor.area_id": "Room",
   "editor.show_tiles": "All plants as tiles",
-  "editor.plant": "Plant",
+  "picker.overview.name": "Rootwise overview",
+  "picker.overview.description": "Which plants need water today, with one-tap ticks, and all plants as tiles.",
+  "picker.plant.name": "Rootwise plant",
+  "picker.plant.description": "One plant: status, moisture and climate ranges, watering with undo, history.",
   "editor.title": "Title",
   "editor.show_history": "Show history",
 };
@@ -192,7 +195,10 @@ const de: Strings = {
   "tile.never": "noch nie gegossen",
   "editor.area_id": "Raum",
   "editor.show_tiles": "Alle Pflanzen als Kacheln",
-  "editor.plant": "Pflanze",
+  "picker.overview.name": "Rootwise Übersicht",
+  "picker.overview.description": "Welche Pflanzen heute Wasser brauchen, zum Abhaken, und alle Pflanzen als Kacheln.",
+  "picker.plant.name": "Rootwise Pflanze",
+  "picker.plant.description": "Eine Pflanze: Status, Feuchte und Klima mit Zielbereich, Gießen mit Rückgängig, Verlauf.",
   "editor.title": "Titel",
   "editor.show_history": "Verlauf zeigen",
 };

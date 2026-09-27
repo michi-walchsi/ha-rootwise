@@ -33,6 +33,7 @@ def check(sync: bool) -> int:
             PYPROJECT.write_text(
                 text.replace(current.group(0), f'version = "{version}"', 1),
                 encoding="utf-8",
+                newline="\n",  # LF on Windows too (.gitattributes)
             )
         else:
             problems.append(f"pyproject.toml has {current.group(1)}")
@@ -42,7 +43,9 @@ def check(sync: bool) -> int:
             if sync:
                 package["version"] = version
                 PACKAGE.write_text(
-                    json.dumps(package, indent=2) + "\n", encoding="utf-8"
+                    json.dumps(package, indent=2) + "\n",
+                    encoding="utf-8",
+                    newline="\n",
                 )
             else:
                 problems.append(f"frontend/package.json has {package.get('version')}")

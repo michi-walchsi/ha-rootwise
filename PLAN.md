@@ -3,6 +3,27 @@
 > Stand 27.09.2026 · HA 2026.9.3 · Grundlage: PLAN v0, 10 Recherche- und Review-Stränge, dein HA-Brain, Checks auf diesem PC.
 > Freigegeben am 27.09.2026. Umsetzung phasenweise, siehe §7.
 
+## Update nach v0.1: neue Phasenfolge (27.09.2026)
+
+Nach dem ersten Test wurden vier Wünsche vorgezogen: keine Helfer pro Pflanze, Messwerte in Prozent mit mehr als „ok“, schöne Karten wie bei Plant Monitor und OpenPlantbook, und alles intuitiver. Daraus wurde:
+
+| Version | Inhalt |
+|---|---|
+| **v0.2** | Messwerte als eigene Sensoren mit Zielbereich und Bewertung, Bodenfeuchte in 5 Stufen („nass, frisch gegossen“ statt Fehlalarm), Artsuche über die OpenPlantbook-Integration, Import und Zusammenführen aus Plant Monitor, Erkennung von Spiegel-Sensoren mit Reparatur, WebSocket-API, Karten „Übersicht“ und „Pflanze“, Einträge nachtragen und löschen |
+| v0.3 | Gieß-Erkennung, Prognose, Benachrichtigungen, Kalender |
+| v0.4 | Panel mit Assistent, Verlaufsdiagramm, Kalibrier-Assistent |
+| v0.5 | Fotos und KI (Gemini über AI Task) |
+| v0.6 | Licht (DLI), Klima, Pflegeaufgaben |
+| v1.0 | Feinschliff |
+
+Geänderte Entscheidungen gegenüber §5 und §7:
+- **Wahrheit für die Gieß-Erkennung** ist das Rootwise-Journal (jeder Eintrag für „jetzt“ speichert die Bodenfeuchte) plus die Langzeitstatistik des Sensors. Die zwei Helfer-Tasten pro Pflanze entfallen.
+- **Zielbereiche** außer der Bodenfeuchte kommen aus OpenPlantbook, dem Import oder der Offline-Liste und sind im Schritt „Zielbereiche“ änderbar. Die Feuchtewerte von OpenPlantbook bleiben ungenutzt (andere Sensor-Skala).
+- **Messwert-Spiegel** haben keine `state_class` und schreiben höchstens einmal pro Minute.
+- **Karten vor dem Panel**: Die Lovelace-Karten kommen mit v0.2, das Panel mit v0.4.
+
+---
+
 ## 0. Kontext in drei Sätzen
 
 Rootwise soll eine lokale, mobile Pflanzen-App in Home Assistant werden. Sie zeigt, welche Pflanze Wasser braucht, erkennt das Gießen, sagt das nächste Gießen voraus und prüft Fotos mit KI plus Sensorverlauf. Der v0-Plan war inhaltlich fast richtig, baute aber zuerst viel Infrastruktur und hätte dir erst nach etwa 40 % der Roadmap etwas Sichtbares gebracht. Neu ist außerdem deine Entscheidung: **Die KI läuft gratis über Gemini in der Cloud, nicht lokal am PC.** Das vereinfacht die Architektur stark.
