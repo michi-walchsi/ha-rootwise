@@ -475,6 +475,20 @@
         }
       },
       "title": "{plant} reads mirror sensors"
+    },
+    "sensor_offline": {
+      "fix_flow": {
+        "abort": {
+          "plant_removed": "This plant no longer exists."
+        },
+        "step": {
+          "confirm": {
+            "description": "Rootwise has had no data from {sensor} for many hours. Usually the battery is empty or the sensor lost its radio connection; check it and wait for a new value. Submit to open the plant settings and pick another sensor.",
+            "title": "Check the soil sensor"
+          }
+        }
+      },
+      "title": "{plant}: soil sensor stopped reporting"
     }
   },
   "options": {

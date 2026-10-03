@@ -475,6 +475,20 @@
         }
       },
       "title": "{plant} liest Spiegel-Sensoren"
+    },
+    "sensor_offline": {
+      "fix_flow": {
+        "abort": {
+          "plant_removed": "Die Pflanze gibt es nicht mehr."
+        },
+        "step": {
+          "confirm": {
+            "description": "Von {sensor} kommen seit vielen Stunden keine Werte. Meist ist die Batterie leer oder die Funkverbindung weg; prüf den Sensor und warte auf einen neuen Wert. Mit „Absenden“ öffnest du die Pflanzen-Einstellungen, um einen anderen Sensor zu wählen.",
+            "title": "Bodensensor prüfen"
+          }
+        }
+      },
+      "title": "{plant}: Bodensensor meldet sich nicht"
     }
   },
   "options": {

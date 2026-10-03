@@ -56,6 +56,7 @@ from .engine.status import (
 from .engine.thresholds import default_thresholds
 from .models import PlantConfig
 from .push import Notifier
+from .repairs import OFFLINE_REPAIR_AFTER, async_clear_offline, async_raise_offline
 from .species.db import Species, SpeciesDb
 from .store import RootwiseStorage
 from .watering import WateringTracker
@@ -139,6 +140,7 @@ class PlantRuntime:
         self._unsubs: list[CALLBACK_TYPE] = []
         self._snooze_timer: CALLBACK_TYPE | None = None
         self._very_dry = False
+        self._offline_since: datetime | None = None
         self.tracker = WateringTracker(self)
 
     # ---- settings -------------------------------------------------------
@@ -341,9 +343,26 @@ class PlantRuntime:
         self._update_measurements(result)
         if previous is not None:
             self._warn_if_critical(previous, result, low)
+        self._track_offline(result)
         for update in list(self._listeners):
             update()
         self.hub.async_notify()
+
+    def _track_offline(self, result: PlantStatus) -> None:
+        if result.status is Status.SENSOR_OFFLINE and self.config.moisture_sensor:
+            now = dt_util.utcnow()
+            self._offline_since = self._offline_since or now
+            if now - self._offline_since >= OFFLINE_REPAIR_AFTER:
+                async_raise_offline(
+                    self.hass,
+                    self.hub.entry.entry_id,
+                    self.config.plant_id,
+                    self.config.name,
+                    self.config.moisture_sensor,
+                )
+        elif self._offline_since is not None:
+            self._offline_since = None
+            async_clear_offline(self.hass, self.config.plant_id)
 
     def _warn_if_critical(
         self, previous: PlantStatus, result: PlantStatus, low: float
