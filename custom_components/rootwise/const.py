@@ -72,6 +72,9 @@ CARE_TYPES: Final = [
     "note",
 ]
 CARE_SENSOR_MOVED: Final = "sensor_moved"
+# Journal source of waterings Rootwise found in the sensor data itself.
+SOURCE_AUTO: Final = "auto"
+EVENT_WATERING_DETECTED: Final = "rootwise_watering_detected"
 # Logging a time this far ahead is a typo or a wrong phone clock.
 FUTURE_TOLERANCE: Final = timedelta(minutes=5)
 SIGNAL_UPDATE: Final = f"{DOMAIN}_update"
@@ -107,6 +110,7 @@ PLANT_ENTITY_KEYS: Final[tuple[str, ...]] = (
     CARE_WATERED,
     CARE_FERTILIZED,
     "snooze",
+    "next_watering",
 )
 HUB_ENTITY_KEYS: Final[tuple[str, ...]] = (
     "plants_needing_water",

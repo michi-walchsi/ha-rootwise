@@ -20,6 +20,7 @@ from typing import Final
 from .series import Bucket, hold
 
 RISE: Final = 8.0
+STEP: Final = RISE / 4  # one reading this much higher: water is arriving
 LOOKBACK: Final = timedelta(hours=3)
 CONFIRM_AFTER: Final = timedelta(hours=1)
 CONFIRM_SHARE: Final = 0.5
@@ -68,20 +69,22 @@ def detect(buckets: Sequence[Bucket], now: datetime) -> list[Watering]:
             continue
         if found and current.start - found[-1].at < EPISODE:
             continue
-        window = _window(data, i)
-        base_index = min(
-            range(len(window)), key=lambda k: (window[k].low, -k)
-        )  # lowest value, the latest one on ties
-        base = window[base_index].low
-        if base <= MIN_VALID or current.high - base < RISE:
+        # Cheap filter first: enough of a rise within the lookback at all?
+        if current.high - min(b.low for b in _window(data, i)) < RISE:
             continue
-        start = next(b for b in window[base_index:] if b.high >= base + RISE / 4).start
-        if _restores_level(data, window[base_index], current):
+        k = _rise_start(data, i)
+        if k is None:
+            continue
+        start = data[k].start
+        before = min(data[k].low, data[k - 1].mean) if k else data[k].low
+        if before <= MIN_VALID or current.high - before < RISE:
+            continue
+        if _restores_level(data, before, start, current):
             continue
         if now < start + CONFIRM_AFTER:
             break  # too early to tell; later rises belong to this episode
         later = hold(data, start + CONFIRM_AFTER)
-        if later is None or later < base + CONFIRM_SHARE * RISE:
+        if later is None or later < before + CONFIRM_SHARE * RISE:
             continue
         peak = max(b.high for b in data if start <= b.start <= start + CONFIRM_AFTER)
         settling = [
@@ -90,7 +93,7 @@ def detect(buckets: Sequence[Bucket], now: datetime) -> list[Watering]:
         found.append(
             Watering(
                 at=start,
-                before=base,
+                before=before,
                 peak=peak,
                 settled=median(settling) if settling else None,
             )
@@ -98,12 +101,33 @@ def detect(buckets: Sequence[Bucket], now: datetime) -> list[Watering]:
     return found
 
 
-def _restores_level(data: Sequence[Bucket], base: Bucket, current: Bucket) -> bool:
+def _steep(data: Sequence[Bucket], j: int) -> bool:
+    """Return True if data[j] reads clearly higher than the value held before."""
+    return j > 0 and data[j].high - data[j - 1].mean >= STEP
+
+
+def _rise_start(data: Sequence[Bucket], i: int) -> int | None:
+    """Index of the first reading of the steep rise ending at data[i].
+
+    Water arrives within minutes, so a watering is a run of clearly higher
+    readings; a slow drift over hours (condensation, warmth) is not.
+    """
+    if not _steep(data, i):
+        return None
+    k = i
+    while k > 1 and _steep(data, k - 1):
+        k -= 1
+    return k
+
+
+def _restores_level(
+    data: Sequence[Bucket], before: float, start: datetime, current: Bucket
+) -> bool:
     """Return True if the rise only undoes a drop, like a probe put back in."""
-    since = base.start - EPISODE
-    # Strictly before the low point: an hourly bucket holds the rise itself.
-    top = max((b.high for b in data if since <= b.start < base.start), default=base.low)
-    if top - base.low < RISE:
+    since = start - EPISODE
+    # Strictly before the rise: an hourly bucket holds the rise itself.
+    top = max((b.high for b in data if since <= b.start < start), default=before)
+    if top - before < RISE:
         return False
     return current.high < top + RISE / 2
 

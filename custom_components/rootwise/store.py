@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util, ulid as ulid_util
 
-from .const import DOMAIN
+from .const import CARE_WATERED, DOMAIN
 
 STORAGE_VERSION = 1
 SAVE_DELAY = 30  # seconds
@@ -127,6 +127,19 @@ class RootwiseStorage:
         """Return a plant's newest entries first."""
         own = [e for e in self.journal if e["plant_id"] == plant_id]
         return sorted(own, key=_ts, reverse=True)[:limit]
+
+    def watering_entries(self, plant_id: str) -> list[dict[str, Any]]:
+        """Return a plant's watering entries, oldest first."""
+        own = [
+            e
+            for e in self.journal
+            if e["plant_id"] == plant_id and e["type"] == CARE_WATERED
+        ]
+        return sorted(own, key=_ts)
+
+    def watering_times(self, plant_id: str) -> list[datetime]:
+        """Return when a plant was watered, oldest first."""
+        return [_ts(e) for e in self.watering_entries(plant_id)]
 
     def last_entry(self, plant_id: str, care_type: str) -> dict[str, Any] | None:
         """Return the newest entry of a type for a plant."""

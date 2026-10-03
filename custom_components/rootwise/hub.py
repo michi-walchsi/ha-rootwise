@@ -30,14 +30,18 @@ from .const import (
     CARE_WATERED,
     DEFAULT_INTERVAL,
     DEFAULT_SNOOZE,
+    EVENT_WATERING_DETECTED,
     FUTURE_TOLERANCE,
     HUB_ENTITY_KEYS,
     MEASUREMENTS,
     PLANT_ENTITY_KEYS,
     SIGNAL_UPDATE,
+    SOURCE_AUTO,
     SUBENTRY_PLANT,
 )
+from .engine.detect import Watering
 from .engine.interval import seasonal_interval
+from .engine.learn import learned_interval
 from .engine.measure import Range, Rating, rate_all
 from .engine.status import (
     MoistureLevel,
@@ -52,6 +56,7 @@ from .engine.thresholds import default_thresholds
 from .models import PlantConfig
 from .species.db import Species, SpeciesDb
 from .store import RootwiseStorage
+from .watering import WateringTracker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -131,24 +136,43 @@ class PlantRuntime:
         self._listeners: list[Callable[[], None]] = []
         self._unsubs: list[CALLBACK_TYPE] = []
         self._snooze_timer: CALLBACK_TYPE | None = None
+        self.tracker = WateringTracker(self)
 
     # ---- settings -------------------------------------------------------
 
     @property
-    def _settings(self) -> dict[str, Any]:
+    def settings(self) -> dict[str, Any]:
+        """Return this plant's stored settings."""
         return self.hub.storage.plant(self.config.plant_id)
 
+    @property
+    def _settings(self) -> dict[str, Any]:
+        return self.settings
+
     def thresholds(self) -> tuple[float, float]:
-        """Return (low, high): user override or species default."""
+        """Return (low, high): own setting, else learned, else species default."""
         style = self.species.watering_style if self.species else ""
         low, high = default_thresholds(style)
+        if self.tracker.learned is not None:
+            low, high = self.tracker.learned
         own = self._settings.get("thresholds", {})
         return float(own.get(THRESHOLD_LOW, low)), float(own.get(THRESHOLD_HIGH, high))
 
+    def threshold_source(self) -> str:
+        """Return where the thresholds come from: custom, learned or species."""
+        if self._settings.get("thresholds"):
+            return "custom"
+        return "learned" if self.tracker.learned is not None else "species"
+
     def interval_days(self) -> float:
-        """Return the watering interval: user override or seasonal species value."""
+        """Return the watering interval: own setting, learned, or seasonal default."""
         if (own := self._settings.get("interval_days")) is not None:
             return float(own)
+        learned = learned_interval(
+            self.hub.storage.watering_times(self.config.plant_id)
+        )
+        if learned is not None:
+            return learned
         summer, winter = (
             (self.species.summer_days, self.species.winter_days)
             if self.species
@@ -203,8 +227,7 @@ class PlantRuntime:
         """Return the target range of a measurement and where it comes from."""
         if key == "soil_moisture":
             low, high = self.thresholds()
-            custom = bool(self._settings.get("thresholds"))
-            return Range(low, high), "custom" if custom else "species"
+            return Range(low, high), self.threshold_source()
         if (own := _range_from(self.config.ranges.get(key))) is not None:
             return own, "custom"
         target, source = species_range(key, self.config.species_info, self.species)
@@ -233,6 +256,7 @@ class PlantRuntime:
         for unsub in self._unsubs:
             unsub()
         self._unsubs.clear()
+        self.tracker.async_stop()
         if self._snooze_timer:
             self._snooze_timer()
             self._snooze_timer = None
@@ -250,7 +274,32 @@ class PlantRuntime:
 
     @callback
     def _on_sensor_change(self, event: Event[EventStateChangedData]) -> None:
+        new = event.data["new_state"]
+        if new is not None and event.data["entity_id"] == self.config.moisture_sensor:
+            self.tracker.add_sample(new.last_updated, new.state)
         self.async_evaluate()
+
+    def next_watering(self) -> dict[str, Any] | None:
+        """Return the next watering: forecast from the sensor, else interval."""
+        if self.config.moisture_sensor:
+            result = self.tracker.forecast
+            if result is None:
+                return None
+            return {
+                "due": result.due,
+                "earliest": result.earliest,
+                "latest": result.latest,
+                "confidence": result.confidence.value,
+                "rate": round(result.rate, 1),
+                "method": "trend",
+            }
+        last = self.last_watered
+        if last is None:
+            return None
+        return {
+            "due": last + timedelta(days=self.interval_days()),
+            "method": "interval",
+        }
 
     # ---- evaluation -----------------------------------------------------
 
@@ -374,6 +423,9 @@ class PlantRuntime:
         recent = when is None or dt_util.utcnow() - when <= FUTURE_TOLERANCE
         if recent and reading is not None and reading.value is not None:
             data["moisture"] = reading.value
+        if care_type == CARE_WATERED and source != SOURCE_AUTO:
+            # The user's own entry is the truth; a detected one nearby goes.
+            self.tracker.replace_detected(when or dt_util.utcnow())
         entry = self.hub.storage.async_add_entry(
             self.config.plant_id,
             care_type,
@@ -383,6 +435,8 @@ class PlantRuntime:
             user_id=user_id,
             data=data,
         )
+        if care_type == CARE_WATERED:
+            self.tracker.update_forecast(dt_util.utcnow())
         if care_type == CARE_WATERED and self._settings.get("snoozed_until"):
             self._settings["snoozed_until"] = None
             self.hub.storage.async_save_data()
@@ -392,8 +446,14 @@ class PlantRuntime:
 
     @callback
     def async_delete_entry(self, entry_id: str) -> None:
-        """Remove a journal entry of this plant (for example a wrong tap)."""
-        self.hub.storage.async_delete_entry(entry_id)
+        """Remove a journal entry of this plant (for example a wrong tap).
+
+        A deleted detected watering is remembered, so it is not found again.
+        """
+        entry = self.hub.storage.async_delete_entry(entry_id)
+        if entry and entry["source"] == SOURCE_AUTO and (ts := _parse(entry["ts"])):
+            self.tracker.reject(ts)
+        self.tracker.update_forecast(dt_util.utcnow())
         self.async_evaluate()
 
     @callback
@@ -466,9 +526,13 @@ class RootwiseHub:
     @callback
     def async_start(self) -> None:
         """Evaluate every plant and start listening."""
-        for plant in self.plants.values():
+        for plant_id, plant in self.plants.items():
             plant.async_evaluate()
             plant.async_start()
+            # The recorder query can take a moment on a Pi: don't hold up start.
+            self.entry.async_create_background_task(
+                self.hass, plant.tracker.async_load(), f"rootwise_history_{plant_id}"
+            )
         self._ready = True
         self.async_notify()
         self._unsub_tick = async_track_utc_time_change(
@@ -486,9 +550,33 @@ class RootwiseHub:
 
     @callback
     def _on_tick(self, _now: datetime) -> None:
-        # Hourly: stale sensors, interval due dates, season changes.
+        # Hourly: stale sensors, interval due dates, season changes, forecasts
+        # and waterings that need an hour of quiet to be confirmed.
         for plant in self.plants.values():
-            plant.async_evaluate()
+            if plant.config.moisture_sensor:
+                plant.tracker.async_process()
+            else:
+                plant.async_evaluate()
+
+    @callback
+    def async_watering_detected(
+        self, plant: PlantRuntime, entry: dict[str, Any], watering: Watering
+    ) -> None:
+        """Announce a watering found in the sensor data."""
+        self.hass.bus.async_fire(
+            EVENT_WATERING_DETECTED,
+            {
+                "plant_id": plant.config.plant_id,
+                "name": plant.config.name,
+                "entry_id": entry["id"],
+                "at": watering.at.isoformat(),
+                "before": round(watering.before, 1),
+                "after": round(
+                    watering.settled if watering.settled is not None else watering.peak,
+                    1,
+                ),
+            },
+        )
 
     @callback
     def add_listener(self, update: Callable[[], None]) -> CALLBACK_TYPE:

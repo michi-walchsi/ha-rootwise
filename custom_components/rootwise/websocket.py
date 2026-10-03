@@ -7,6 +7,7 @@ the entry.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.auth.permissions.const import POLICY_CONTROL
@@ -136,7 +137,33 @@ def _plant(
         "last_watered": watered.isoformat() if watered else None,
         "species": _species(hass, plant),
         "measurements": _measurements(plant),
+        "next_watering": _next_watering(plant),
+        "thresholds": _thresholds(plant),
         "recent": hub.storage.entries(plant_id, RECENT),
+    }
+
+
+def _next_watering(plant: PlantRuntime) -> dict[str, Any] | None:
+    result = plant.next_watering()
+    if result is None:
+        return None
+    return {
+        key: value.isoformat() if isinstance(value, datetime) else value
+        for key, value in result.items()
+    }
+
+
+def _thresholds(plant: PlantRuntime) -> dict[str, Any] | None:
+    if not plant.config.moisture_sensor:
+        return None
+    low, high = plant.thresholds()
+    learned = plant.tracker.learned
+    return {
+        "low": low,
+        "high": high,
+        "source": plant.threshold_source(),
+        "learned": list(learned) if learned else None,
+        "waterings": len(plant.tracker.waterings),
     }
 
 

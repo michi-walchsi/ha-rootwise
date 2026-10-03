@@ -298,6 +298,35 @@
       "last_watered": {
         "name": "Zuletzt gegossen"
       },
+      "next_watering": {
+        "name": "Nächstes Gießen",
+        "state_attributes": {
+          "confidence": {
+            "name": "Sicherheit",
+            "state": {
+              "high": "Hoch",
+              "low": "Niedrig",
+              "medium": "Mittel"
+            }
+          },
+          "earliest": {
+            "name": "Frühestens"
+          },
+          "latest": {
+            "name": "Spätestens"
+          },
+          "method": {
+            "name": "Methode",
+            "state": {
+              "interval": "Übliches Intervall",
+              "trend": "Austrocknungs-Trend"
+            }
+          },
+          "rate": {
+            "name": "Austrocknung pro Tag"
+          }
+        }
+      },
       "plants_needing_water": {
         "name": "Pflanzen brauchen Wasser",
         "unit_of_measurement": "Pflanzen"
@@ -326,6 +355,7 @@
             "state": {
               "custom": "Deine Einstellung",
               "default": "Standard",
+              "learned": "Gelernt aus deinem Gießen",
               "offline": "Eingebaute Artenliste",
               "openplantbook": "OpenPlantbook",
               "plant_monitor": "Plant Monitor",

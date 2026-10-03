@@ -298,6 +298,35 @@
       "last_watered": {
         "name": "Last watered"
       },
+      "next_watering": {
+        "name": "Next watering",
+        "state_attributes": {
+          "confidence": {
+            "name": "Confidence",
+            "state": {
+              "high": "High",
+              "low": "Low",
+              "medium": "Medium"
+            }
+          },
+          "earliest": {
+            "name": "Earliest"
+          },
+          "latest": {
+            "name": "Latest"
+          },
+          "method": {
+            "name": "Method",
+            "state": {
+              "interval": "Usual interval",
+              "trend": "Drying trend"
+            }
+          },
+          "rate": {
+            "name": "Drying per day"
+          }
+        }
+      },
       "plants_needing_water": {
         "name": "Plants needing water",
         "unit_of_measurement": "plants"
@@ -326,6 +355,7 @@
             "state": {
               "custom": "Your setting",
               "default": "Default",
+              "learned": "Learned from your waterings",
               "offline": "Built-in species list",
               "openplantbook": "OpenPlantbook",
               "plant_monitor": "Plant Monitor",

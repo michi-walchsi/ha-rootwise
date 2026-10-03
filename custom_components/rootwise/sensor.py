@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Hashable
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
@@ -37,6 +37,7 @@ async def async_setup_entry(
         entities: list[SensorEntity] = [
             StatusSensor(runtime),
             LastWateredSensor(runtime),
+            NextWateringSensor(runtime),
         ]
         entities += [MeasurementSensor(runtime, key) for key in runtime.sources()]
         async_add_entities(entities, config_subentry_id=plant_id)
@@ -186,6 +187,42 @@ class LastWateredSensor(RootwisePlantEntity, SensorEntity):
     def _refresh(self) -> Hashable:
         self._attr_native_value = self._runtime.last_watered
         return self._attr_native_value
+
+
+def _half_hour(at: datetime) -> datetime:
+    """Round to the nearest half hour: precise enough, and few state writes."""
+    floor = at.replace(minute=0, second=0, microsecond=0)
+    minutes = round((at - floor).total_seconds() / 1800) * 30
+    return floor + timedelta(minutes=minutes)
+
+
+class NextWateringSensor(RootwisePlantEntity, SensorEntity):
+    """When the plant will need water: drying trend, or the usual interval."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _unrecorded_attributes = frozenset({"earliest", "latest", "rate"})
+
+    def __init__(self, runtime: PlantRuntime) -> None:
+        """Init the forecast sensor."""
+        super().__init__(runtime, "next_watering")
+
+    def _refresh(self) -> Hashable:
+        result = self._runtime.next_watering()
+        if result is None:
+            self._attr_native_value = None
+            self._attr_extra_state_attributes = {}
+            return None
+        due = _half_hour(result["due"])
+        attributes: dict[str, Any] = {"method": result["method"]}
+        for key in ("earliest", "latest"):
+            if key in result:
+                attributes[key] = _half_hour(result[key]).isoformat()
+        for key in ("confidence", "rate"):
+            if key in result:
+                attributes[key] = result[key]
+        self._attr_native_value = due
+        self._attr_extra_state_attributes = attributes
+        return (due, tuple(sorted(attributes.items())))
 
 
 class PlantsNeedingWaterSensor(RootwiseHubEntity, SensorEntity):

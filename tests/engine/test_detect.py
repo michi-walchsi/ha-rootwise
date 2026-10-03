@@ -78,8 +78,8 @@ def test_daily_wobble_is_not_a_watering() -> None:
 
 
 def test_one_episode_counts_once() -> None:
-    # Watering in two rounds within an hour.
-    values = series(50, 50, 50, 62, 63, 72, 73, 73, 72, 72, 72, 72, 72, 72, 72)
+    # Watering in two rounds within an hour (after two quiet hours of data).
+    values = series(*[50] * 13, 62, 63, 72, 73, 73, 72, 72, 72, 72, 72, 72, 72)
     assert len(detect(values, now=values[-1].start + timedelta(hours=1))) == 1
 
 
@@ -131,3 +131,21 @@ def test_merge_lets_finer_data_replace_coarse(hourly, raw) -> None:
     assert all(b.start >= first_raw for b in combined if b.end == b.start)
     assert not any(b.start >= first_raw and b.end != b.start for b in combined)
     assert merge() == []
+
+
+def test_time_and_level_come_from_just_before_the_rise() -> None:
+    # An older, lower reading in the lookback must not move the watering time.
+    values = series(38, 40.2, 40.1, 40.2, 40.1, 40.0, 58, 71, 66, 64, 63.5, 63.4, 63.3)
+    values = [
+        Bucket.point(b.start + timedelta(hours=2), b.mean) if i else b
+        for i, b in enumerate(values)
+    ]
+    (watering,) = detect(values, now=values[-1].start + timedelta(hours=1))
+    assert watering.at == values[6].start
+    assert watering.before == pytest.approx(40.0)
+
+
+def test_slow_drift_is_not_a_watering() -> None:
+    # 50 → 59 over three hours in small steps: condensation or warmth, not water.
+    values = series(*(50 + i * 0.5 for i in range(19)))
+    assert detect(values, now=values[-1].start + timedelta(hours=1)) == []

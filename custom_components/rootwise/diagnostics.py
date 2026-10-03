@@ -30,6 +30,8 @@ async def async_get_config_entry_diagnostics(
                 "reasons": [r.code for r in state.reasons] if state else [],
                 "needs_water": state.needs_water if state else None,
                 "thresholds": runtime.thresholds(),
+                "threshold_source": runtime.threshold_source(),
+                "learning": runtime.tracker.summary(),
                 "interval_days": runtime.interval_days(),
                 "journal_entries": hub.storage.count_entries(plant_id),
             }

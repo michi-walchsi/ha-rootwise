@@ -43,6 +43,9 @@
       "last_watered": {
         "default": "mdi:watering-can"
       },
+      "next_watering": {
+        "default": "mdi:calendar-clock"
+      },
       "plants_needing_water": {
         "default": "mdi:watering-can-outline"
       },
