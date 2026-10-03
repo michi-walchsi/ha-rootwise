@@ -253,3 +253,40 @@ async def test_sensor_moved_is_a_care_type(
         care_type="sensor_moved",
     )
     assert result["entry"]["type"] == "sensor_moved"
+
+
+async def test_any_user_may_reject_a_detected_watering(
+    hass: HomeAssistant, entry: MockConfigEntry, user_client
+) -> None:
+    sid = subentry_id(entry, "Monstera")
+    detected = entry.runtime_data.storage.async_add_entry(sid, "watered", "auto")
+    await user_client.result("rootwise/care/delete", entry_id=detected["id"])
+    assert entry.runtime_data.storage.get_entry(detected["id"]) is None
+    assert entry.runtime_data.plants[sid].settings["rejected"]
+
+
+async def test_reset_thresholds_goes_back_to_learned_or_species(
+    hass: HomeAssistant, entry: MockConfigEntry, client
+) -> None:
+    sid = subentry_id(entry, "Monstera")
+    await hass.services.async_call(
+        "number",
+        "set_value",
+        {"entity_id": "number.monstera_dry_threshold", "value": 45},
+        blocking=True,
+    )
+    plant = _plant(await client.result("rootwise/plants"), "Monstera")
+    assert plant["thresholds"]["source"] == "custom"
+    await client.result("rootwise/thresholds/reset", plant_id=sid)
+    plant = _plant(await client.result("rootwise/plants"), "Monstera")
+    assert plant["thresholds"]["source"] == "species"
+    assert hass.states.get("number.monstera_dry_threshold").state != "45.0"
+
+
+async def test_read_only_user_cannot_reset_thresholds(
+    hass: HomeAssistant, entry: MockConfigEntry, read_only_client
+) -> None:
+    response = await read_only_client.call(
+        "rootwise/thresholds/reset", plant_id=subentry_id(entry, "Monstera")
+    )
+    assert response["error"]["code"] == "unauthorized"

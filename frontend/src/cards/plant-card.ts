@@ -1,15 +1,18 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { canDelete, deleteCare, logCare, snooze } from "../api";
+import { canDelete, deleteCare, logCare, resetThresholds, snooze } from "../api";
 import { formatNumber, relativeTime, scale, shortDateTime } from "../format";
 import { language } from "../i18n";
 import { RootwiseCardBase, editorLabel, errorText } from "./base";
 import {
   MEASUREMENT_ORDER,
   detail,
+  entryDetail,
   findPlant,
   firstPlantDevice,
   hints,
+  learnedHint,
+  nextLine,
   toLocalInput,
   whenFor,
   type PlantRef,
@@ -211,7 +214,11 @@ export class RootwisePlantCard extends RootwiseCardBase {
               ${hintTexts.map((text) => html`<li><ha-icon icon="mdi:information-outline"></ha-icon>${text}</li>`)}
             </ul>`
           : nothing}
-        <div class="last muted">${this.lastWatered(plant)}</div>
+        ${this.renderLearned(plant)}
+        <div class="when-block">
+          ${this.renderNext(plant)}
+          <div class="last muted">${this.lastWatered(plant)}</div>
+        </div>
         ${this.renderActions(plant)} ${this.panel === "when" ? this.renderWhen() : nothing}
         ${this.panel === "more" ? this.renderMore() : nothing}
         ${this.toast ? this.renderToast(this.toast) : nothing}
@@ -298,6 +305,39 @@ export class RootwisePlantCard extends RootwiseCardBase {
         <span class="value num">${value}</span>
       </div>
     `;
+  }
+
+  private renderNext(plant: Plant): TemplateResult | typeof nothing {
+    const line = this.hass ? nextLine(this.hass, plant, new Date()) : null;
+    if (!line) return nothing;
+    return html`<div class="next">
+      <ha-icon icon="mdi:calendar-clock"></ha-icon>
+      <span>${line.text}${line.window ? html` <span class="muted">${line.window}</span>` : nothing}</span>
+    </div>`;
+  }
+
+  private renderLearned(plant: Plant): TemplateResult | typeof nothing {
+    const hint = this.hass ? learnedHint(this.hass, plant) : null;
+    if (!hint) return nothing;
+    return html`<div class="learned muted">
+      <ha-icon icon="mdi:school-outline"></ha-icon>
+      <span>${hint.text}</span>
+      ${hint.canApply
+        ? html`<button class="link" @click=${() => void this.applyLearned(plant)}>
+            ${this.t("thresholds.apply")}
+          </button>`
+        : nothing}
+    </div>`;
+  }
+
+  private async applyLearned(plant: Plant): Promise<void> {
+    if (!this.hass) return;
+    try {
+      await resetThresholds(this.hass, plant.id);
+      this.showToast({ text: this.t("toast.thresholds") });
+    } catch (err) {
+      this.showToast({ text: this.t("toast.failed", { error: errorText(err) }) });
+    }
   }
 
   private lastWatered(plant: Plant): string {
@@ -407,28 +447,30 @@ export class RootwisePlantCard extends RootwiseCardBase {
           ? html`<div class="muted small">${this.t("history.empty")}</div>`
           : html`<ul>
               ${plant.recent.map((entry) => {
-                const moisture = entry.data?.moisture;
+                const extra = this.hass ? entryDetail(this.hass, entry) : "";
                 const deletable = this.hass ? canDelete(this.hass, entry) : false;
                 const confirming = this.confirmDelete === entry.id;
-                return html`<li>
+                const detected = entry.source === "auto";
+                return html`<li class=${detected ? "detected" : ""}>
                   <ha-icon icon=${ICONS[entry.type] ?? "mdi:circle-small"}></ha-icon>
                   <div class="entry">
                     <span>${this.t(`care.${entry.type}`)}</span>
                     <span class="muted small">
-                      ${shortDateTime(entry.ts, lang)}${moisture !== undefined
-                        ? ` · ${this.t("history.moisture", { value: moisture })}`
-                        : ""}
+                      ${shortDateTime(entry.ts, lang)}${extra ? ` · ${extra}` : ""}
                     </span>
                   </div>
                   ${deletable
                     ? html`<button
                         class="delete ${confirming ? "confirm" : ""}"
-                        aria-label=${this.t("action.delete")}
+                        aria-label=${this.t(detected ? "history.reject" : "action.delete")}
+                        title=${this.t(detected ? "history.reject" : "action.delete")}
                         @click=${() => this.askDelete(entry)}
                       >
                         ${confirming
-                          ? this.t("delete.confirm")
-                          : html`<ha-icon icon="mdi:delete-outline"></ha-icon>`}
+                          ? this.t(detected ? "history.reject_confirm" : "delete.confirm")
+                          : html`<ha-icon
+                              icon=${detected ? "mdi:close-circle-outline" : "mdi:delete-outline"}
+                            ></ha-icon>`}
                       </button>`
                     : nothing}
                 </li>`;
@@ -621,8 +663,36 @@ export class RootwisePlantCard extends RootwiseCardBase {
         --mdc-icon-size: 16px;
         margin-top: 1px;
       }
+      .when-block {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .next {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .next ha-icon,
+      .learned ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--rw-accent);
+      }
       .last {
         font-size: 14px;
+      }
+      .learned {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 13px;
+      }
+      .learned .link {
+        min-height: 32px;
+        padding: 0 8px;
       }
       .actions {
         display: flex;

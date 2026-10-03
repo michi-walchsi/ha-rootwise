@@ -31,7 +31,24 @@ export interface JournalEntry {
   source: string;
   note?: string;
   user_id?: string;
-  data?: { moisture?: number };
+  data?: { moisture?: number; before?: number; peak?: number; settled?: number };
+}
+
+export interface NextWatering {
+  due: string;
+  earliest?: string;
+  latest?: string;
+  confidence?: "high" | "medium" | "low";
+  rate?: number;
+  method: "trend" | "interval";
+}
+
+export interface Thresholds {
+  low: number;
+  high: number;
+  source: "custom" | "learned" | "species";
+  learned: [number, number] | null;
+  waterings: number;
 }
 
 export interface Reason {
@@ -62,6 +79,8 @@ export interface Plant {
     source: string | null;
   };
   measurements: Partial<Record<MeasurementKey, Measurement>>;
+  next_watering: NextWatering | null;
+  thresholds: Thresholds | null;
   recent: JournalEntry[];
 }
 

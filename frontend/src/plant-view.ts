@@ -1,7 +1,8 @@
 // Pure helpers behind the plant card: easy to test without a browser.
 
-import { localize } from "./i18n";
-import type { HomeAssistant, MeasurementKey, Plant, Reason } from "./types";
+import { relativeTime } from "./format";
+import { language, localize } from "./i18n";
+import type { HomeAssistant, JournalEntry, MeasurementKey, Plant, Reason } from "./types";
 
 export const MEASUREMENT_ORDER: MeasurementKey[] = [
   "soil_moisture",
@@ -88,4 +89,80 @@ export function firstPlantDevice(hass: HomeAssistant): string | undefined {
   return entities.find(
     (e) => e.platform === "rootwise" && e.entity_id.endsWith("_status") && e.device_id,
   )?.device_id;
+}
+
+export interface NextLine {
+  text: string;
+  window?: string;
+}
+
+/** "Nächstes Gießen übermorgen (So. – Di.)", "Gießen ist fällig", or learning. */
+export function nextLine(hass: HomeAssistant, plant: Plant, now: Date): NextLine | null {
+  const next = plant.next_watering;
+  if (!next) {
+    return plant.measurements.soil_moisture ? { text: localize(hass, "next.learning") } : null;
+  }
+  const due = new Date(next.due);
+  if (due.getTime() <= now.getTime()) return { text: localize(hass, "next.due") };
+  const lang = language(hass);
+  const time = relativeTime(next.due, now, lang);
+  const key =
+    next.method === "interval"
+      ? "next.interval"
+      : next.confidence === "low"
+        ? "next.in_rough"
+        : "next.in";
+  const line: NextLine = { text: localize(hass, key, { time }) };
+  if (next.earliest && next.latest) {
+    const day = (iso: string) =>
+      new Intl.DateTimeFormat(lang, { weekday: "short" }).format(new Date(iso));
+    const from = day(next.earliest);
+    const to = day(next.latest);
+    if (from !== to) line.window = localize(hass, "next.window", { from, to });
+  }
+  return line;
+}
+
+export interface LearnedHint {
+  text: string;
+  canApply: boolean;
+}
+
+const NOTABLE = 3; // points: smaller differences are not worth a hint
+
+/** Offer learned thresholds when own ones differ, or say they are learned. */
+export function learnedHint(hass: HomeAssistant, plant: Plant): LearnedHint | null {
+  const th = plant.thresholds;
+  if (!th?.learned) return null;
+  const [low, high] = th.learned;
+  if (th.source === "learned") {
+    return {
+      text: localize(hass, "thresholds.learned", { count: th.waterings }),
+      canApply: false,
+    };
+  }
+  if (th.source === "custom" && (Math.abs(low - th.low) >= NOTABLE || Math.abs(high - th.high) >= NOTABLE)) {
+    return { text: localize(hass, "thresholds.learned_hint", { low, high }), canApply: true };
+  }
+  return null;
+}
+
+/** Second line of a history entry: moisture then, or the rise of a detection. */
+export function entryDetail(hass: HomeAssistant, entry: JournalEntry): string {
+  const data = entry.data ?? {};
+  if (entry.source === "auto") {
+    const after = data.settled ?? data.peak;
+    const rise =
+      data.before !== undefined && after !== undefined
+        ? localize(hass, "history.rise", {
+            before: Math.round(data.before),
+            after: Math.round(after),
+          })
+        : "";
+    return [localize(hass, "history.detected"), rise].filter(Boolean).join(" · ");
+  }
+  if (data.moisture !== undefined) {
+    return localize(hass, "history.moisture", { value: data.moisture });
+  }
+  return "";
 }

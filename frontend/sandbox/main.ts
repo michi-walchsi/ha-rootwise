@@ -48,7 +48,7 @@ customElements.define("ha-icon", HaIcon);
 const now = Date.now();
 const iso = (hoursAgo: number) => new Date(now - hoursAgo * 3_600_000).toISOString();
 
-const plants: Plant[] = [
+const base: Omit<Plant, "next_watering" | "thresholds">[] = [
   {
     id: "p-calathea",
     name: "Calathea",
@@ -128,7 +128,7 @@ const plants: Plant[] = [
     },
     recent: [
       entry("p-monstera", "watered", 1, "button", 76),
-      entry("p-monstera", "watered", 18, "card", 31),
+      { ...entry("p-monstera", "watered", 18, "auto"), data: { before: 59.9, peak: 92, settled: 78.7 } },
       entry("p-monstera", "fertilized", 24 * 12, "card", 45),
     ],
   },
@@ -170,6 +170,35 @@ const plants: Plant[] = [
     recent: [],
   },
 ];
+
+const inHours = (hours: number) => new Date(now + hours * 3_600_000).toISOString();
+const extras: Record<string, Pick<Plant, "next_watering" | "thresholds">> = {
+  "p-monstera": {
+    next_watering: {
+      due: inHours(50),
+      earliest: inHours(38),
+      latest: inHours(70),
+      confidence: "medium",
+      rate: 2.2,
+      method: "trend",
+    },
+    thresholds: { low: 60, high: 85, source: "custom", learned: [57, 85], waterings: 2 },
+  },
+  "p-calathea": {
+    next_watering: { due: iso(5), confidence: "medium", rate: 3.1, method: "trend" },
+    thresholds: { low: 35, high: 75, source: "learned", learned: [35, 75], waterings: 3 },
+  },
+  "p-efeu": { next_watering: { due: inHours(96), method: "interval" }, thresholds: null },
+  "p-ficus": {
+    next_watering: { due: inHours(120), confidence: "low", rate: 1.1, method: "trend" },
+    thresholds: { low: 25, high: 65, source: "species", learned: null, waterings: 0 },
+  },
+  "p-zz": { next_watering: { due: iso(24), method: "interval" }, thresholds: null },
+};
+const plants: Plant[] = base.map((p) => ({
+  ...p,
+  ...(extras[p.id] ?? { next_watering: null, thresholds: null }),
+}));
 
 function m(
   value: number,

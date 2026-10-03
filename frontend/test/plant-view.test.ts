@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   detail,
+  entryDetail,
   findPlant,
   firstPlantDevice,
   hints,
+  learnedHint,
+  nextLine,
   toLocalInput,
   whenFor,
 } from "../src/plant-view";
@@ -70,5 +73,94 @@ describe("firstPlantDevice", () => {
       },
     } as unknown as HomeAssistant;
     expect(firstPlantDevice(h)).toBe("d1");
+  });
+});
+
+describe("next watering", () => {
+  const now = new Date(2026, 9, 3, 12, 0);
+  const iso = (d: number, h = 12) => new Date(2026, 9, d, h).toISOString();
+
+  it("says when, with a window", () => {
+    const p = plant({
+      next_watering: {
+        due: iso(5),
+        earliest: iso(4, 18),
+        latest: iso(6, 8),
+        confidence: "medium",
+        rate: 2.2,
+        method: "trend",
+      },
+    });
+    const line = nextLine(hass, p, now);
+    expect(line?.text).toBe("Nächstes Gießen übermorgen");
+    // Weekday abbreviations differ between ICU versions ("So" or "So.").
+    expect(line?.window).toMatch(/^\(So\.? – Di\.?\)$/);
+  });
+
+  it("is rough with low confidence and names the interval", () => {
+    const rough = plant({
+      next_watering: { due: iso(6), confidence: "low", method: "trend" },
+    });
+    expect(nextLine(hass, rough, now)?.text).toBe("Nächstes Gießen ungefähr in 3 Tagen");
+    const interval = plant({ next_watering: { due: iso(9), method: "interval" } });
+    expect(nextLine(hass, interval, now)?.text).toBe(
+      "Nächstes Gießen in 6 Tagen (übliches Intervall)",
+    );
+  });
+
+  it("says due and learning", () => {
+    expect(nextLine(hass, plant({ next_watering: { due: iso(2), method: "trend" } }), now))
+      .toEqual({ text: "Gießen ist fällig" });
+    const learning = plant({
+      next_watering: null,
+      measurements: {
+        soil_moisture: {
+          value: 50,
+          unit: "%",
+          min: 20,
+          max: 60,
+          rating: "ok",
+          level: "ok",
+          range_source: "species",
+          source: "sensor.x",
+        },
+      },
+    });
+    expect(nextLine(hass, learning, now)?.text).toContain("lernt noch");
+    expect(nextLine(hass, plant({ next_watering: null }), now)).toBeNull();
+  });
+});
+
+describe("learned thresholds", () => {
+  const base = { waterings: 2, learned: [57, 85] as [number, number] };
+
+  it("offers learned values when own ones differ", () => {
+    const p = plant({ thresholds: { ...base, low: 60, high: 85, source: "custom" } });
+    expect(learnedHint(hass, p)).toEqual({
+      text: "Gelernt aus deinem Gießen: trocken 57 %, nass 85 %",
+      canApply: true,
+    });
+  });
+
+  it("stays quiet when they match, and explains learned ones", () => {
+    const same = plant({ thresholds: { ...base, low: 58, high: 86, source: "custom" } });
+    expect(learnedHint(hass, same)).toBeNull();
+    const learned = plant({ thresholds: { ...base, low: 57, high: 85, source: "learned" } });
+    expect(learnedHint(hass, learned)).toEqual({
+      text: "Schwellen gelernt aus 2× Gießen",
+      canApply: false,
+    });
+  });
+});
+
+describe("history detail", () => {
+  const entry = { id: "e", plant_id: "p", ts: "", type: "watered", source: "card" };
+
+  it("shows the moisture of manual entries and the rise of detected ones", () => {
+    expect(entryDetail(hass, { ...entry, data: { moisture: 38 } })).toBe("38 % Bodenfeuchte");
+    expect(
+      entryDetail(hass, { ...entry, source: "auto", data: { before: 59.9, settled: 78.7 } }),
+    ).toBe("erkannt · 60 → 79 %");
+    expect(entryDetail(hass, entry)).toBe("");
   });
 });

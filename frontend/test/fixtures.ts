@@ -16,6 +16,8 @@ export function plant(overrides: Partial<Plant> = {}): Plant {
     last_watered: null,
     species: { scientific: "Monstera deliciosa", common: "Monstera", image_url: null, source: "openplantbook" },
     measurements: {},
+    next_watering: null,
+    thresholds: null,
     recent: [],
     ...overrides,
   };

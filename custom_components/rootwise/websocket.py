@@ -25,7 +25,7 @@ from homeassistant.helpers import (
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 import voluptuous as vol
 
-from .const import CARE_TYPES, CARE_WATERED, DOMAIN, SIGNAL_UPDATE
+from .const import CARE_TYPES, CARE_WATERED, DOMAIN, SIGNAL_UPDATE, SOURCE_AUTO
 from .engine.measure import round_value
 from .hub import FutureTimeError
 
@@ -44,6 +44,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ws_log_care,
         ws_delete_care,
         ws_journal,
+        ws_reset_thresholds,
     ):
         async_register_command(hass, command)
 
@@ -279,7 +280,7 @@ def ws_log_care(
 def ws_delete_care(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Delete a journal entry: admins any, others only their own."""
+    """Delete a journal entry: admins any, others their own or a detected one."""
     hub = _hub(hass)
     entry = hub.storage.get_entry(msg["entry_id"]) if hub else None
     plant = hub.plants.get(entry["plant_id"]) if hub and entry else None
@@ -287,10 +288,10 @@ def ws_delete_care(
         connection.send_error(msg["id"], "not_found", "Unknown entry")
         return
     user = connection.user
-    own = entry.get("user_id") == user.id and _may_log(
-        hass, connection, hub, plant.config.plant_id
-    )
-    if not (user.is_admin or own):
+    # A detected watering belongs to no one: whoever may log may reject it.
+    mine = entry.get("user_id") == user.id or entry["source"] == SOURCE_AUTO
+    allowed = mine and _may_log(hass, connection, hub, plant.config.plant_id)
+    if not (user.is_admin or allowed):
         connection.send_error(msg["id"], "unauthorized", "Not allowed")
         return
     plant.async_delete_entry(entry["id"])
@@ -316,3 +317,21 @@ def ws_journal(
         msg["id"],
         {"entries": hub.storage.entries(plant.config.plant_id, msg["limit"])},
     )
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/thresholds/reset", vol.Required("plant_id"): str}
+)
+@callback
+def ws_reset_thresholds(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Drop own thresholds: learned ones (or species defaults) apply again."""
+    if (found := _plant_or_error(hass, connection, msg)) is None:
+        return
+    hub, plant = found
+    if not _may_log(hass, connection, hub, plant.config.plant_id):
+        connection.send_error(msg["id"], "unauthorized", "Not allowed")
+        return
+    plant.async_reset_thresholds()
+    connection.send_result(msg["id"])

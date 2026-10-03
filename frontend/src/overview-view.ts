@@ -69,6 +69,11 @@ export function tile(hass: HomeAssistant, plant: Plant, now: Date): Tile {
     const measure = localize(hass, `m.${key as MeasurementKey}`);
     return { color: "var(--rw-warn)", text: localize(hass, `tile.${rating}`, { measure }) };
   }
+  const next = plant.next_watering;
+  if (next && new Date(next.due).getTime() > now.getTime()) {
+    const time = relativeTime(next.due, now, language(hass));
+    return { color: "var(--rw-accent)", text: localize(hass, "tile.next", { time }) };
+  }
   if (plant.moisture_level) {
     return { color: "var(--rw-accent)", text: localize(hass, `level.${plant.moisture_level}`) };
   }

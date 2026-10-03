@@ -511,6 +511,14 @@ class PlantRuntime:
         self.async_evaluate()
 
     @callback
+    def async_reset_thresholds(self) -> None:
+        """Forget own thresholds; learned or species values apply again."""
+        if self._settings.pop("thresholds", None) is not None:
+            self.hub.storage.async_save_data()
+        self.tracker.update_forecast(dt_util.utcnow())
+        self.async_evaluate()
+
+    @callback
     def async_set_interval(self, days: float) -> None:
         """Override the watering interval (plants without sensor)."""
         self._settings["interval_days"] = days

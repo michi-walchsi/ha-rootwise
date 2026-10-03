@@ -68,9 +68,17 @@ export async function snooze(hass: HomeAssistant, entityId: string): Promise<voi
   });
 }
 
-/** Admins may delete everything, others only what they logged themselves. */
+export async function resetThresholds(hass: HomeAssistant, plantId: string): Promise<void> {
+  await hass.callWS({ type: "rootwise/thresholds/reset", plant_id: plantId });
+}
+
+/**
+ * Admins may delete everything, others what they logged themselves and
+ * waterings Rootwise detected ("that wasn't me").
+ */
 export function canDelete(hass: HomeAssistant, entry: JournalEntry): boolean {
   const user = hass.user;
   if (!user) return false;
-  return user.is_admin || (entry.user_id !== undefined && entry.user_id === user.id);
+  if (user.is_admin || entry.source === "auto") return true;
+  return entry.user_id !== undefined && entry.user_id === user.id;
 }
