@@ -19,6 +19,11 @@
         "default": "mdi:watering-can"
       }
     },
+    "calendar": {
+      "care_calendar": {
+        "default": "mdi:calendar-heart"
+      }
+    },
     "number": {
       "dry_threshold": {
         "default": "mdi:water-minus"

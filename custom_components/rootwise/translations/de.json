@@ -151,6 +151,11 @@
         "name": "Gegossen"
       }
     },
+    "calendar": {
+      "care_calendar": {
+        "name": "Pflanzenpflege"
+      }
+    },
     "number": {
       "dry_threshold": {
         "name": "Trocken-Schwelle"

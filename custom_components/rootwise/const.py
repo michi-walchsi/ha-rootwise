@@ -91,6 +91,34 @@ DEFAULT_INTERVAL: Final = (7.0, 12.0)  # summer, winter days for unknown species
 
 # Generated to-do summaries in the language of the Home Assistant instance
 TODO_WATER_SUMMARY: Final = {"de": "{name} gießen", "en": "Water {name}"}
+CALENDAR_TEXTS: Final[dict[str, dict[str, str]]] = {
+    "de": {"water": "{name} gießen", "window": "Zwischen {earliest} und {latest}"},
+    "en": {"water": "Water {name}", "window": "Between {earliest} and {latest}"},
+}
+CARE_NAMES: Final[dict[str, dict[str, str]]] = {
+    "de": {
+        "watered": "Gegossen",
+        "fertilized": "Gedüngt",
+        "repotted": "Umgetopft",
+        "cleaned": "Blätter gereinigt",
+        "rotated": "Gedreht",
+        "pest_check": "Auf Schädlinge geprüft",
+        "pruned": "Geschnitten",
+        "sensor_moved": "Sensor umgesteckt",
+        "note": "Notiz",
+    },
+    "en": {
+        "watered": "Watered",
+        "fertilized": "Fertilized",
+        "repotted": "Repotted",
+        "cleaned": "Leaves cleaned",
+        "rotated": "Rotated",
+        "pest_check": "Checked for pests",
+        "pruned": "Pruned",
+        "sensor_moved": "Sensor moved",
+        "note": "Note",
+    },
+}
 
 # Measurements mirrored onto the plant device: (key, source field, device class)
 MEASUREMENTS: Final[tuple[tuple[str, str, str], ...]] = (
@@ -120,6 +148,7 @@ PLANT_ENTITY_KEYS: Final[tuple[str, ...]] = (
     "next_watering",
 )
 HUB_ENTITY_KEYS: Final[tuple[str, ...]] = (
+    "care_calendar",
     "plants_needing_water",
     "vacation_mode",
     "plant_care",

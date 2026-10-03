@@ -151,6 +151,11 @@
         "name": "Watered"
       }
     },
+    "calendar": {
+      "care_calendar": {
+        "name": "Plant care"
+      }
+    },
     "number": {
       "dry_threshold": {
         "name": "Dry threshold"
