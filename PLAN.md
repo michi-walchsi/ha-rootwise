@@ -10,7 +10,7 @@ Nach dem ersten Test wurden vier Wünsche vorgezogen: keine Helfer pro Pflanze, 
 | Version | Inhalt |
 |---|---|
 | **v0.2** | Messwerte als eigene Sensoren mit Zielbereich und Bewertung, Bodenfeuchte in 5 Stufen („nass, frisch gegossen“ statt Fehlalarm), Artsuche über die OpenPlantbook-Integration, Import und Zusammenführen aus Plant Monitor, Erkennung von Spiegel-Sensoren mit Reparatur, WebSocket-API, Karten „Übersicht“ und „Pflanze“, Einträge nachtragen und löschen |
-| v0.3 | Gieß-Erkennung, Prognose, Benachrichtigungen, Kalender |
+| **v0.3** ✓ | Gieß-Erkennung (live und aus 60 Tagen Recorder), gelernte Schwellen und Intervalle, Prognose „Nächstes Gießen“, Benachrichtigungen mit Einmal-Codes, Kalender, Reparatur bei offline Sensor, Backtest-Werkzeug |
 | v0.4 | Panel mit Assistent, Verlaufsdiagramm, Kalibrier-Assistent |
 | v0.5 | Fotos und KI (Gemini über AI Task) |
 | v0.6 | Licht (DLI), Klima, Pflegeaufgaben |

@@ -2,9 +2,9 @@
 
 Pflanzenpflege für Home Assistant mit echten Sensordaten.
 
-Rootwise zeigt dir, welche Pflanze heute Wasser braucht und wie es ihr geht: Bodenfeuchte in Prozent, Temperatur, Luftfeuchte, Licht und Dünger, jeweils mit dem Zielbereich der Art. Gießen trägst du mit einem Tap ein. Später erkennt Rootwise das Gießen selbst, sagt das nächste voraus und prüft Fotos mit KI.
+Rootwise zeigt dir, welche Pflanze heute Wasser braucht und wie es ihr geht: Bodenfeuchte in Prozent, Temperatur, Luftfeuchte, Licht und Dünger, jeweils mit dem Zielbereich der Art. Es erkennt das Gießen am Sensor selbst, lernt, wann du gießt, sagt das nächste Gießen voraus und erinnert dich am Handy. Später prüft es Fotos mit KI.
 
-> **Status:** frühe Entwicklung (v0.2). Phasen: v0.2 Werte, Arten, Karten · v0.3 Gieß-Erkennung und Prognose · v0.4 Panel und Kalibrierung · v0.5 Fotos und KI · v0.6 Licht und Pflegeaufgaben · v1.0. Details in [PLAN.md](PLAN.md).
+> **Status:** frühe Entwicklung (v0.3). Phasen: v0.2 Werte, Arten, Karten ✓ · v0.3 Gieß-Erkennung, Prognose, Benachrichtigungen ✓ · v0.4 Panel und Kalibrierung · v0.5 Fotos und KI · v0.6 Licht und Pflegeaufgaben · v1.0. Details in [PLAN.md](PLAN.md).
 
 ## Was Rootwise kann
 
@@ -28,7 +28,16 @@ Jede Pflanze ist ein eigenes Gerät mit:
 - **Hinweise** wie „Luft zu trocken: 41 %, mindestens 50 %“. Sie erscheinen in Karte und Status, melden aber kein Problem. Ein Problem meldet nur die Bodenfeuchte.
 - **Braucht Wasser**, **Problem**, **Zuletzt gegossen**, Knöpfe **Gegossen**, **Gedüngt**, **+1 Tag**, einstellbare Feuchte-Schwellen.
 
-Ohne Bodensensor gilt ein Gieß-Intervall (Artwert, überschreibbar). Global gibt es **Pflanzen brauchen Wasser**, den **Urlaubsmodus** und die To-do-Liste **Pflanzenpflege**.
+- **Nächstes Gießen** als Zeitpunkt, mit Zeitfenster, Sicherheit und Austrocknung pro Tag.
+
+Ohne Bodensensor gilt ein Gieß-Intervall: erst der Artwert, nach drei eingetragenen Gießrunden dein übliches Intervall (überschreibbar). Global gibt es **Pflanzen brauchen Wasser**, den **Urlaubsmodus**, die To-do-Liste **Pflanzenpflege** und den Kalender **Pflanzenpflege** (nächste Gießtermine, darunter alles Eingetragene).
+
+### Gießen erkennen, lernen, vorhersagen
+
+- **Erkennen:** Steigt die Bodenfeuchte innerhalb von Minuten deutlich (mindestens 8 Punkte) und bleibt eine Stunde später oben, trägt Rootwise „Gegossen (erkannt)“ ins Journal ein, mit dem Wert davor und danach. Hast du selbst schon eingetragen, gibt es keinen zweiten Eintrag. Beim ersten Start liest Rootwise dazu die letzten 60 Tage aus dem Recorder.
+- **„War ich nicht“:** Ein falsch erkannter Eintrag lässt sich in der Karte oder direkt im Push zurückweisen. Er kommt dann nicht wieder.
+- **Lernen:** Nach zwei Gießrunden kennt Rootwise deinen Sensor und deinen Topf. Die Trocken-Schwelle ist dann der Wert, bei dem du gießt, die Nass-Schwelle liegt 10 Punkte über dem Wert nach dem Abtropfen. Gelernte Schwellen ersetzen die Artwerte; hast du selbst Schwellen eingestellt, gelten deine, und die Karte bietet die gelernten zum Übernehmen an.
+- **Vorhersagen:** Aus dem Austrocknen der letzten Tage (robust gegen Tagesschwankungen, ohne die Stunden direkt nach dem Gießen) berechnet Rootwise, wann die Trocken-Schwelle erreicht ist. Je mehr Gießrunden bekannt sind, desto enger wird das Zeitfenster.
 
 ### Karten
 
@@ -55,13 +64,24 @@ show_history: true
 
 Beide Karten folgen dem hellen oder dunklen Theme deines Dashboards und sprechen Deutsch oder Englisch.
 
+### Benachrichtigungen
+
+Unter *Einstellungen → Geräte & Dienste → Rootwise → Konfigurieren* wählst du die Handys (Home-Assistant-App) und die Uhrzeit der Tagesübersicht. Dann kommen:
+
+- **Tagesübersicht** (Standard 8:00): welche Pflanzen heute Wasser brauchen, mit den Knöpfen **Gegossen ✓** und **+1 Tag**.
+- **Gießen erkannt**: kurz nach dem Gießen, mit **War ich nicht** (abschaltbar).
+- **Kritische Warnungen**: tagelang zu nass oder sehr trocken (10 Punkte unter der Trocken-Schwelle). Sie kommen sofort, auch in der Ruhezeit und im Urlaub, höchstens alle 12 Stunden.
+
+In der Ruhezeit (Standard 22–7 Uhr) und im Urlaubsmodus gibt es keine Tagesübersicht und keine Bestätigungen. Die Knöpfe in einem Push funktionieren nur einmal und nur für Benutzer, deren Handy ausgewählt ist.
+
 ### Reparaturen
 
-Liest eine Pflanze einen **Spiegel-Sensor** (etwa die Kopie „Monstera Bodenfeuchtigkeit“ von Plant Monitor) statt des echten Sensors, meldet Rootwise das unter *Einstellungen → Reparaturen*. Ein Klick stellt auf den echten Sensor um. Spiegel-Sensoren stehen beim Anlegen gar nicht erst zur Wahl.
+- Liest eine Pflanze einen **Spiegel-Sensor** (etwa die Kopie „Monstera Bodenfeuchtigkeit“ von Plant Monitor) statt des echten Sensors, meldet Rootwise das unter *Einstellungen → Reparaturen*. Ein Klick stellt auf den echten Sensor um. Spiegel-Sensoren stehen beim Anlegen gar nicht erst zur Wahl.
+- Meldet sich ein **Bodensensor 12 Stunden** lang nicht (oder ist er nicht verfügbar), kommt ein Hinweis mit Tipps und einem Knopf zu den Pflanzen-Einstellungen. Er verschwindet von selbst, sobald wieder Werte kommen. Sensoren, die nur bei Änderung melden, dürfen dabei mehrere Stunden still sein.
 
 ### Aktionen
 
-`rootwise.log_care` (mit optionaler Zeit `when`, zum Nachtragen), `rootwise.snooze` und `rootwise.set_vacation` für Automationen, NFC-Tags oder Assist.
+`rootwise.log_care` (mit optionaler Zeit `when`, zum Nachtragen), `rootwise.snooze` und `rootwise.set_vacation` für Automationen, NFC-Tags oder Assist. Bei jedem erkannten Gießen feuert das Ereignis `rootwise_watering_detected` (Pflanze, Wert davor und danach).
 
 ## Installation (HACS, benutzerdefiniertes Repository)
 
@@ -84,24 +104,28 @@ Voraussetzung: Home Assistant 2026.9 oder neuer. Für die Artsuche zusätzlich d
 ## Bodenfeuchtesensor richtig einrichten
 
 - **Platzierung:** Den Sensor senkrecht bis zur Markierung in die Wurzelzone stecken, nicht an den Topfrand. Nach dem Umstecken ändern sich die Werte; trag dann in der Karte **Sensor umgesteckt** ein.
-- **Skala:** Der Sensor misst roh, und jeder Topf ist anders. Rootwise startet mit Richtwerten aus dem Gießstil der Art. Die Kalibrierung mit „trocken“ und „frisch gegossen“ kommt mit v0.4. Die Feuchtewerte von OpenPlantbook und Plant Monitor nutzt Rootwise bewusst nicht: Sie stammen von einer anderen Sensor-Skala.
-- **Langzeitstatistik:** Rootwise braucht die Langzeitstatistik des Sensors (`state_class: measurement`). Zigbee2MQTT setzt das bei Bodenfeuchtesensoren automatisch. Die Messwert-Spiegel von Rootwise haben bewusst keine eigene Statistik und schreiben höchstens einmal pro Minute: Das schont die SD-Karte.
+- **Skala:** Der Sensor misst roh, und jeder Topf ist anders. In einem echten Topf hieß „trocken genug“ etwa 60 % und „frisch gegossen“ etwa 78 %, weit weg von den Artwerten. Deshalb startet Rootwise mit Richtwerten aus dem Gießstil der Art und lernt nach zwei Gießrunden die echten Werte. Die Feuchtewerte von OpenPlantbook und Plant Monitor nutzt Rootwise bewusst nicht: Sie stammen von einer anderen Sensor-Skala.
+- **Langzeitstatistik:** Rootwise braucht die Langzeitstatistik des Sensors (`state_class: measurement`), um vergangene Gießrunden zu finden. Zigbee2MQTT setzt das bei Bodenfeuchtesensoren automatisch. Die Messwert-Spiegel von Rootwise haben bewusst keine eigene Statistik und schreiben höchstens einmal pro Minute: Das schont die SD-Karte.
+- **Kalibrierung:** Bis v0.4 der Kalibrier-Assistent kommt, lernt Rootwise die Skala aus deinen Gießrunden (siehe oben).
 - **Empfohlene Sensoren:**
   - Feuchte: ThirdReality Soil Moisture (Zigbee)
   - Licht: ein Lux-Sensor pro Fenster, zum Beispiel Aqara Light Sensor T1 oder ESPHome mit VEML7700
   - Leitwert (optional): Mi Flora
 
-## Echte Daten für die Gieß-Erkennung (v0.3)
+## Daten selbst ansehen und nachrechnen
 
-Du brauchst **keine Helfer** mehr. Jeder Eintrag in Rootwise (Knopf, Karte, To-do, Aktion) landet im Journal, bei Einträgen für „jetzt“ mit der Bodenfeuchte in diesem Moment. Die Langzeitstatistik deines Sensors hält den Verlauf dauerhaft. Beides zusammen ist die Grundlage, um die Gieß-Erkennung an deinen echten Kurven einzustellen.
+Du brauchst **keine Helfer**. Jeder Eintrag in Rootwise (Knopf, Karte, To-do, Push, Aktion, erkannt) landet im Journal, die Langzeitstatistik deines Sensors hält den Verlauf dauerhaft.
 
-Wer die Daten selbst ansehen will, exportiert sie auf dem PC (sie bleiben lokal in `dev/data/`). Den Token legst du unter *Profil → Sicherheit → Langlebige Zugriffstokens* an:
+Wer die Daten selbst ansehen will, exportiert sie auf dem PC (sie bleiben lokal in `dev/data/`) und spielt Erkennung und Prognose darauf nach. Den Token legst du unter *Profil → Sicherheit → Langlebige Zugriffstokens* an:
 
 ```powershell
 $env:HA_URL = "https://<dein-host>.ts.net"
 $env:HA_TOKEN = "<Token>"
-.venv\Scripts\python dev\tools\export_history.py --journal
+.venv/Scripts/python dev/tools/export_history.py --journal
+.venv/Scripts/python dev/tools/backtest.py sensor.<dein_bodenfeuchtesensor>
 ```
+
+Der Backtest zeigt die gefundenen Gießrunden neben dem Journal, die gelernten Schwellen, das Austrocknen pro Runde und wie weit die Prognose bei 25, 50 und 75 % jeder Runde danebengelegen hätte.
 
 ## Foto-Check vorbereiten: Google Gemini (für v0.5)
 

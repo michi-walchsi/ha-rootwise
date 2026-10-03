@@ -4,6 +4,23 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-03 (Gieß-Erkennung, Prognose, Benachrichtigungen)
+
+### Neu
+- **Gieß-Erkennung** aus den Sensordaten: deutlicher Anstieg (mindestens 8 Punkte) innerhalb von Minuten, der eine Stunde später noch hält. Rootwise trägt „Gegossen (erkannt)“ mit dem Wert davor und danach ins Journal ein, liest beim Start die letzten 60 Tage aus dem Recorder und verdoppelt nichts, was du schon eingetragen hast. Ereignis `rootwise_watering_detected`.
+- **„War ich nicht“** für erkannte Einträge in Karte und Push; zurückgewiesene Einträge kommen nicht wieder.
+- **Gelernte Schwellen** nach zwei Gießrunden: trocken = wo du gießt, nass = Wert nach dem Abtropfen + 10. Sie ersetzen die Artwerte; eigene Schwellen haben Vorrang, die Karte bietet die gelernten zum Übernehmen an.
+- **Gelerntes Intervall** für Pflanzen ohne Sensor nach drei Gießrunden.
+- Sensor **„Nächstes Gießen“** pro Pflanze: Trend der letzten Tage mit Zeitfenster, Sicherheit und Austrocknung pro Tag, sonst letztes Gießen plus Intervall.
+- **Benachrichtigungen** an die Companion-App: Tagesübersicht mit „Gegossen“ und „+1 Tag“, „Gießen erkannt“ mit „War ich nicht“, kritische Warnungen (tagelang zu nass, sehr trocken) sofort und höchstens alle 12 Stunden. Ruhezeit und Urlaub werden beachtet; Knöpfe gelten nur einmal und nur für Benutzer der ausgewählten Handys.
+- Kalender **Pflanzenpflege** mit den nächsten Gießterminen und allem Eingetragenen.
+- **Reparatur**, wenn ein Bodensensor 12 Stunden offline ist, mit Sprung in die Pflanzen-Einstellungen.
+- Karten: Zeile „Nächstes Gießen“ mit Zeitfenster, Hinweis auf gelernte Schwellen, erkannte Einträge im Verlauf, Prognose in den Kacheln.
+- Backtest-Werkzeug `dev/tools/backtest.py` für Erkennung und Prognose auf exportierten Daten.
+
+### Geändert
+- Die Optionen enthalten jetzt Handys, Tagesübersicht, Bestätigungs-Pushes und Ruhezeit.
+
 ## [0.2.1] - 2026-10-03
 
 ### Behoben
