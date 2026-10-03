@@ -7,7 +7,10 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
 
-STALE_AFTER = timedelta(hours=3)
+# Many soil probes report only on change and stay silent for hours when the
+# value is stable (seen: 3.5 h). A dead sensor usually turns "unavailable",
+# which counts as offline at once.
+STALE_AFTER = timedelta(hours=12)
 TOO_WET_AFTER = timedelta(hours=48)
 HYSTERESIS = 3.0
 WATERED_GRACE = timedelta(hours=3)

@@ -4,6 +4,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen 
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-03
+
+### Behoben
+- **Kein falsches „Sensor offline“ mehr**: Bodensensoren, die nur bei Änderung melden, schweigen bei stabilem Wert mehrere Stunden (gemessen: bis 3,5 h). Rootwise hielt sie schon nach 3 Stunden für offline. Jetzt erst nach 12 Stunden ohne Meldung; meldet die Integration den Sensor als „nicht verfügbar“, gilt er weiterhin sofort als offline.
+
 ## [0.2.0] - 2026-09-27 (Werte, Arten, Karten)
 
 ### Neu

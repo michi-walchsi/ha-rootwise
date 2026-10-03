@@ -57,7 +57,13 @@ async def test_unavailable_sensor_is_a_problem(
 async def test_stale_sensor_detected_by_hourly_check(
     hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
 ) -> None:
+    # A few quiet hours are normal for probes that report only on change.
     freezer.tick(timedelta(hours=4))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.monstera_status").state == "ok"
+
+    freezer.tick(timedelta(hours=9))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert hass.states.get("sensor.monstera_status").state == "sensor_offline"

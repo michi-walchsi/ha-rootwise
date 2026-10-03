@@ -74,8 +74,17 @@ def test_sensor_offline_when_unavailable() -> None:
     assert result.reasons[0].code == "sensor_offline"
 
 
-def test_sensor_offline_when_no_report_for_three_hours() -> None:
-    result = evaluate(_input(moisture=_sensor(40, age=timedelta(hours=3, minutes=1))))
+def test_quiet_sensor_is_not_offline() -> None:
+    # Real ThirdReality probe: reports only on change, silent up to 3.5 h when
+    # the value is stable. That must not flag the sensor as offline.
+    result = evaluate(_input(moisture=_sensor(64, age=timedelta(hours=4))))
+    assert result.status is Status.OK
+
+
+def test_sensor_offline_when_no_report_for_twelve_hours() -> None:
+    quiet = evaluate(_input(moisture=_sensor(40, age=timedelta(hours=11, minutes=59))))
+    assert quiet.status is not Status.SENSOR_OFFLINE
+    result = evaluate(_input(moisture=_sensor(40, age=timedelta(hours=12, minutes=1))))
     assert result.status is Status.SENSOR_OFFLINE
 
 
