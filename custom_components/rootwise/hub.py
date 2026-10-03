@@ -38,6 +38,7 @@ from .const import (
     SIGNAL_UPDATE,
     SOURCE_AUTO,
     SUBENTRY_PLANT,
+    VERY_DRY_MARGIN,
 )
 from .engine.detect import Watering
 from .engine.interval import seasonal_interval
@@ -54,6 +55,7 @@ from .engine.status import (
 )
 from .engine.thresholds import default_thresholds
 from .models import PlantConfig
+from .push import Notifier
 from .species.db import Species, SpeciesDb
 from .store import RootwiseStorage
 from .watering import WateringTracker
@@ -136,6 +138,7 @@ class PlantRuntime:
         self._listeners: list[Callable[[], None]] = []
         self._unsubs: list[CALLBACK_TYPE] = []
         self._snooze_timer: CALLBACK_TYPE | None = None
+        self._very_dry = False
         self.tracker = WateringTracker(self)
 
     # ---- settings -------------------------------------------------------
@@ -332,12 +335,29 @@ class PlantRuntime:
                 wet_since=self._wet_since,
             )
         )
+        previous = self.state
         self._wet_since = result.wet_since
         self.state = result
         self._update_measurements(result)
+        if previous is not None:
+            self._warn_if_critical(previous, result, low)
         for update in list(self._listeners):
             update()
         self.hub.async_notify()
+
+    def _warn_if_critical(
+        self, previous: PlantStatus, result: PlantStatus, low: float
+    ) -> None:
+        reading = self.measurements.get("soil_moisture")
+        value = reading.value if reading is not None else None
+        if value is None:
+            return
+        if result.status is Status.TOO_WET and previous.status is not Status.TOO_WET:
+            self.hub.notifier.async_critical(self, "too_wet", value)
+        very_dry = value <= low - VERY_DRY_MARGIN
+        if very_dry and not self._very_dry:
+            self.hub.notifier.async_critical(self, "very_dry", value)
+        self._very_dry = very_dry
 
     def _read(self, entity_id: str) -> tuple[float | None, str | None]:
         state = self.hass.states.get(entity_id)
@@ -514,6 +534,7 @@ class RootwiseHub:
         self._listeners: list[Callable[[], None]] = []
         self._unsub_tick: CALLBACK_TYPE | None = None
         self._ready = False
+        self.notifier = Notifier(self)
         for subentry in entry.subentries.values():
             if subentry.subentry_type != SUBENTRY_PLANT:
                 continue
@@ -535,6 +556,7 @@ class RootwiseHub:
             )
         self._ready = True
         self.async_notify()
+        self.notifier.async_start()
         self._unsub_tick = async_track_utc_time_change(
             self.hass, self._on_tick, minute=0, second=7
         )
@@ -544,6 +566,7 @@ class RootwiseHub:
         if self._unsub_tick:
             self._unsub_tick()
             self._unsub_tick = None
+        self.notifier.async_stop()
         for plant in self.plants.values():
             plant.async_stop()
         await self.storage.async_flush()
@@ -577,6 +600,7 @@ class RootwiseHub:
                 ),
             },
         )
+        self.notifier.async_watering_detected(plant, entry, watering)
 
     @callback
     def add_listener(self, update: Callable[[], None]) -> CALLBACK_TYPE:

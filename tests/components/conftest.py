@@ -83,7 +83,13 @@ def monstera_data() -> dict[str, Any]:
 
 
 @pytest.fixture
-async def entry(hass: HomeAssistant, monstera_data) -> MockConfigEntry:
+def entry_options() -> dict[str, Any]:
+    """Options of the Rootwise entry (tests may override)."""
+    return {}
+
+
+@pytest.fixture
+async def entry(hass: HomeAssistant, monstera_data, entry_options) -> MockConfigEntry:
     """A loaded Rootwise entry with a Monstera (sensors) and an Efeutute (none)."""
     for entity_id, (value, attrs) in SOURCES.items():
         hass.states.async_set(entity_id, value, attrs)
@@ -91,7 +97,7 @@ async def entry(hass: HomeAssistant, monstera_data) -> MockConfigEntry:
         domain=DOMAIN,
         title="Rootwise",
         data={},
-        options={},
+        options=entry_options,
         subentries_data=[
             plant("Monstera", monstera_data, MOISTURE),
             plant("Efeutute", EFEUTUTE),

@@ -476,13 +476,20 @@
     "step": {
       "init": {
         "data": {
-          "digest_time": "Tägliche Übersicht um",
-          "notify_devices": "Handys für Benachrichtigungen"
+          "digest_time": "Tagesübersicht um",
+          "notify_detected": "Erkanntes Gießen bestätigen",
+          "notify_devices": "Handys",
+          "quiet_end": "Ruhe bis",
+          "quiet_start": "Ruhe ab"
         },
         "data_description": {
-          "notify_devices": "Wird ab der nächsten Version genutzt."
+          "digest_time": "Listet die Pflanzen, die heute Wasser brauchen, mit „Gegossen“ und „+1 Tag“.",
+          "notify_detected": "Ein kurzer Push mit „War ich nicht“, wenn Rootwise ein Gießen in den Sensordaten sieht.",
+          "notify_devices": "Nur Handys mit der Home-Assistant-App. Knöpfe in einem Push funktionieren nur für Benutzer, deren Handy hier gewählt ist.",
+          "quiet_start": "In dieser Zeit keine Tagesübersicht und keine Bestätigungen."
         },
-        "title": "Rootwise-Optionen"
+        "description": "Pushes gehen an die Companion-App auf den Handys, die du wählst. Kritische Warnungen (tagelang zu nass, sehr trocken) kommen sofort, auch in der Ruhezeit.",
+        "title": "Rootwise-Benachrichtigungen"
       }
     }
   },

@@ -476,13 +476,20 @@
     "step": {
       "init": {
         "data": {
-          "digest_time": "Daily summary at",
-          "notify_devices": "Phones for notifications"
+          "digest_time": "Daily digest at",
+          "notify_detected": "Confirm detected waterings",
+          "notify_devices": "Phones",
+          "quiet_end": "Quiet until",
+          "quiet_start": "Quiet from"
         },
         "data_description": {
-          "notify_devices": "Used from the next version on."
+          "digest_time": "Lists the plants to water today, with “Watered” and “+1 day”.",
+          "notify_detected": "A short push with “That wasn't me” when Rootwise sees a watering in the sensor data.",
+          "notify_devices": "Only phones with the Home Assistant app. Buttons in a push only work for users whose phone is picked here.",
+          "quiet_start": "No digest or confirmation pushes in this time."
         },
-        "title": "Rootwise options"
+        "description": "Pushes go to the companion app on the phones you pick. Critical warnings (too wet for days, very dry) come at once, even in quiet hours.",
+        "title": "Rootwise notifications"
       }
     }
   },

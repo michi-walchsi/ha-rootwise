@@ -56,6 +56,13 @@ LOCATIONS: Final = ["indoor", "balcony", "outdoor"]
 CONF_NOTIFY_DEVICES: Final = "notify_devices"
 CONF_DIGEST_TIME: Final = "digest_time"
 DEFAULT_DIGEST_TIME: Final = "08:00:00"
+CONF_NOTIFY_DETECTED: Final = "notify_detected"
+CONF_QUIET_START: Final = "quiet_start"
+CONF_QUIET_END: Final = "quiet_end"
+DEFAULT_QUIET_START: Final = "22:00:00"
+DEFAULT_QUIET_END: Final = "07:00:00"
+# Points below the dry threshold that count as "very dry" (a push at once).
+VERY_DRY_MARGIN: Final = 10.0
 
 # Care log
 CARE_WATERED: Final = "watered"

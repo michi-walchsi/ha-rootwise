@@ -42,14 +42,19 @@ from .const import (
     CONF_DRAINAGE,
     CONF_LOCATION,
     CONF_MOISTURE_SENSOR,
+    CONF_NOTIFY_DETECTED,
     CONF_NOTIFY_DEVICES,
     CONF_POT_DIAMETER,
     CONF_POT_MATERIAL,
+    CONF_QUIET_END,
+    CONF_QUIET_START,
     CONF_RANGES,
     CONF_SPECIES,
     CONF_SPECIES_INFO,
     CONF_WINDOW,
     DEFAULT_DIGEST_TIME,
+    DEFAULT_QUIET_END,
+    DEFAULT_QUIET_START,
     DOMAIN,
     LOCATIONS,
     MEASUREMENTS,
@@ -110,7 +115,7 @@ class RootwiseConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class RootwiseOptionsFlow(OptionsFlow):
-    """Notification targets and digest time (used from phase 2)."""
+    """Which phones get pushes, when the digest comes, and quiet hours."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -126,6 +131,11 @@ class RootwiseOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_DIGEST_TIME, default=DEFAULT_DIGEST_TIME
                 ): TimeSelector(),
+                vol.Optional(CONF_NOTIFY_DETECTED, default=True): BooleanSelector(),
+                vol.Optional(
+                    CONF_QUIET_START, default=DEFAULT_QUIET_START
+                ): TimeSelector(),
+                vol.Optional(CONF_QUIET_END, default=DEFAULT_QUIET_END): TimeSelector(),
             }
         )
         return self.async_show_form(
