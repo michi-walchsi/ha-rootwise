@@ -4,64 +4,13 @@ from datetime import timedelta
 from typing import Any
 
 from freezegun.api import FrozenDateTimeFactory
-from homeassistant.auth.const import GROUP_ID_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
-import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
-from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.rootwise.const import CARE_WATERED, DOMAIN
 
 from .conftest import subentry_id
-
-
-class Client:
-    """Tiny helper around the test WebSocket client."""
-
-    def __init__(self, ws: Any) -> None:
-        """Wrap the client."""
-        self.ws = ws
-        self._id = 0
-
-    async def call(self, type_: str, **data: Any) -> dict[str, Any]:
-        """Send a command and return the whole response."""
-        self._id += 1
-        await self.ws.send_json({"id": self._id, "type": type_, **data})
-        return await self.ws.receive_json()
-
-    async def result(self, type_: str, **data: Any) -> Any:
-        """Send a command and return its result, asserting success."""
-        response = await self.call(type_, **data)
-        assert response["success"], response
-        return response["result"]
-
-
-@pytest.fixture
-async def client(hass: HomeAssistant, hass_ws_client: WebSocketGenerator) -> Client:
-    """Client of the admin user."""
-    return Client(await hass_ws_client(hass))
-
-
-@pytest.fixture
-async def user_client(
-    hass: HomeAssistant, hass_ws_client: WebSocketGenerator
-) -> Client:
-    """Client of a normal (non-admin) household member."""
-    user = await hass.auth.async_create_user("Kind", group_ids=[GROUP_ID_USER])
-    refresh = await hass.auth.async_create_refresh_token(user, "https://example.com/")
-    token = hass.auth.async_create_access_token(refresh)
-    return Client(await hass_ws_client(hass, access_token=token))
-
-
-@pytest.fixture
-async def read_only_client(
-    hass: HomeAssistant,
-    hass_ws_client: WebSocketGenerator,
-    hass_read_only_access_token: str,
-) -> Client:
-    """Client of a read-only user."""
-    return Client(await hass_ws_client(hass, access_token=hass_read_only_access_token))
 
 
 def _plant(result: dict[str, Any], name: str) -> dict[str, Any]:

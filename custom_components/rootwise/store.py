@@ -128,6 +128,17 @@ class RootwiseStorage:
         own = [e for e in self.journal if e["plant_id"] == plant_id]
         return sorted(own, key=_ts, reverse=True)[:limit]
 
+    def entries_between(
+        self, plant_id: str, start: datetime, end: datetime
+    ) -> list[dict[str, Any]]:
+        """Return a plant's entries from start to end (inclusive), oldest first."""
+        own = [
+            e
+            for e in self.journal
+            if e["plant_id"] == plant_id and start <= _ts(e) <= end
+        ]
+        return sorted(own, key=_ts)
+
     def watering_entries(self, plant_id: str) -> list[dict[str, Any]]:
         """Return a plant's watering entries, oldest first."""
         own = [

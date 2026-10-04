@@ -7,7 +7,7 @@ the entry.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.auth.permissions.const import POLICY_CONTROL
@@ -23,9 +23,19 @@ from homeassistant.helpers import (
     entity_registry as er,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
-from .const import CARE_TYPES, CARE_WATERED, DOMAIN, SIGNAL_UPDATE, SOURCE_AUTO
+from .const import (
+    CARE_FERTILIZED,
+    CARE_SENSOR_MOVED,
+    CARE_TYPES,
+    CARE_WATERED,
+    DOMAIN,
+    SIGNAL_UPDATE,
+    SOURCE_AUTO,
+)
+from .engine.chart import resample, step_for
 from .engine.measure import round_value
 from .hub import FutureTimeError
 
@@ -33,6 +43,8 @@ if TYPE_CHECKING:
     from .hub import PlantRuntime, RootwiseHub
 
 RECENT = 5
+# Journal entries the chart marks.
+CHART_EVENTS = (CARE_WATERED, CARE_FERTILIZED, CARE_SENSOR_MOVED)
 
 
 @callback
@@ -45,6 +57,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ws_delete_care,
         ws_journal,
         ws_reset_thresholds,
+        ws_history,
     ):
         async_register_command(hass, command)
 
@@ -165,6 +178,47 @@ def _thresholds(plant: PlantRuntime) -> dict[str, Any] | None:
         "source": plant.threshold_source(),
         "learned": list(learned) if learned else None,
         "waterings": len(plant.tracker.waterings),
+    }
+
+
+def _history(
+    hub: RootwiseHub, plant: PlantRuntime, days: int, now: datetime
+) -> dict[str, Any]:
+    span = timedelta(days=days)
+    start, step = now - span, step_for(span)
+    sensor = plant.config.moisture_sensor
+    points = resample(plant.tracker.buckets(), start, now, step) if sensor else []
+    forecast = plant.tracker.forecast if sensor else None
+    return {
+        "start": start.isoformat(),
+        "end": now.isoformat(),
+        "step": int(step.total_seconds()),
+        # [epoch ms, mean, min, max]: compact, a 30-day chart has 180 of them.
+        "points": [
+            [
+                int(p.at.timestamp() * 1000),
+                round(p.mean, 1),
+                round(p.low, 1),
+                round(p.high, 1),
+            ]
+            for p in points
+        ],
+        "thresholds": _thresholds(plant),
+        "forecast": {
+            "due": forecast.due.isoformat(),
+            "earliest": forecast.earliest.isoformat(),
+            "latest": forecast.latest.isoformat(),
+            "level": round(forecast.level, 1),
+            "rate": round(forecast.rate, 2),
+            "confidence": forecast.confidence.value,
+        }
+        if forecast
+        else None,
+        "events": [
+            {key: e[key] for key in ("id", "ts", "type", "source", "data") if key in e}
+            for e in hub.storage.entries_between(plant.config.plant_id, start, now)
+            if e["type"] in CHART_EVENTS
+        ],
     }
 
 
@@ -335,3 +389,23 @@ def ws_reset_thresholds(
         return
     plant.async_reset_thresholds()
     connection.send_result(msg["id"])
+
+
+@websocket_command(
+    {
+        vol.Required("type"): "rootwise/plant/history",
+        vol.Required("plant_id"): str,
+        vol.Optional("days", default=14): vol.All(int, vol.Range(min=1, max=60)),
+    }
+)
+@callback
+def ws_history(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Return the soil moisture of the last days, with care and forecast."""
+    if (found := _plant_or_error(hass, connection, msg)) is None:
+        return
+    hub, plant = found
+    connection.send_result(
+        msg["id"], _history(hub, plant, msg["days"], dt_util.utcnow())
+    )
