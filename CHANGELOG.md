@@ -4,6 +4,11 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen 
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-04
+
+### Behoben
+- **Karten in der Companion-App**: Am Handy zeigten die Rootwise-Karten „Konfigurationsfehler – Custom element doesn't exist“. Home Assistant tauscht beim Start die Liste der eigenen Elemente gegen eine neue aus. Die Karten laden parallel dazu und waren auf dem Handy oft schneller, sodass sie in der alten Liste landeten, die Home Assistant danach nicht mehr liest. Die Karten melden sich jetzt erst an, wenn Home Assistant gestartet ist.
+
 ## [0.3.0] - 2026-10-03 (Gieß-Erkennung, Prognose, Benachrichtigungen)
 
 ### Neu

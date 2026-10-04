@@ -1,8 +1,9 @@
 // Entry point: Home Assistant loads this module on every page (registered by
 // custom_components/rootwise/frontend.py), so the cards need no resource entry.
 
-import "./cards/overview-card";
-import "./cards/plant-card";
+import { RootwiseOverviewCard } from "./cards/overview-card";
+import { RootwisePlantCard } from "./cards/plant-card";
+import { defineWhenReady } from "./define";
 import { localize } from "./i18n";
 import type { HomeAssistant } from "./types";
 
@@ -18,5 +19,10 @@ for (const type of ["overview", "plant"]) {
     documentationURL: "https://github.com/michi-walchsi/ha-rootwise",
   });
 }
+
+void defineWhenReady([
+  ["rootwise-overview-card", RootwiseOverviewCard],
+  ["rootwise-plant-card", RootwisePlantCard],
+]);
 
 console.info(`%c ROOTWISE-CARDS %c ${__VERSION__} `, "background:#2e7d32;color:#fff", "");

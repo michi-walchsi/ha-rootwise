@@ -1,5 +1,5 @@
 import { css, html, nothing, type TemplateResult } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { state } from "lit/decorators.js";
 import { canDelete, deleteCare, logCare, resetThresholds, snooze } from "../api";
 import { formatNumber, relativeTime, scale, shortDateTime } from "../format";
 import { language } from "../i18n";
@@ -40,7 +40,6 @@ interface Toast {
 const UNDO_SECONDS = 10;
 const LONG_PRESS_MS = 500;
 
-@customElement("rootwise-plant-card")
 export class RootwisePlantCard extends RootwiseCardBase {
   @state() private config?: PlantCardConfig;
   @state() private panel: "none" | "when" | "more" = "none";

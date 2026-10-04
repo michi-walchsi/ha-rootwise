@@ -1,5 +1,5 @@
 import { css, html, nothing, type TemplateResult } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { state } from "lit/decorators.js";
 import { deleteCare, logCare } from "../api";
 import { language } from "../i18n";
 import { bySeverity, checklist, dueLine, duePlants, inArea, summary, tile } from "../overview-view";
@@ -22,7 +22,6 @@ interface Toast {
 const KEEP_TICKED_MS = 60 * 60 * 1000;
 const TOAST_MS = 10_000;
 
-@customElement("rootwise-overview-card")
 export class RootwiseOverviewCard extends RootwiseCardBase {
   @state() private config?: OverviewConfig;
   @state() private ticked = new Map<string, JournalEntry>();
