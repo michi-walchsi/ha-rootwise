@@ -16,6 +16,7 @@ from .config_flow import async_get_species_db
 from .const import DOMAIN
 from .frontend import async_register_cards, async_register_panel, async_remove_panel
 from .hub import RootwiseHub
+from .photos import async_register_views
 from .repairs import async_check_sources
 from .services import async_setup_services
 from .store import RootwiseStorage
@@ -37,9 +38,10 @@ type RootwiseConfigEntry = ConfigEntry[RootwiseHub]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the actions, the card API and the cards."""
+    """Register the actions, the card API, the photo views and the cards."""
     async_setup_services(hass)
     async_setup_websocket(hass)
+    async_register_views(hass)
     await async_register_cards(hass)
     return True
 

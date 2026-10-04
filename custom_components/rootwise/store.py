@@ -152,6 +152,15 @@ class RootwiseStorage:
         """Return when a plant was watered, oldest first."""
         return [_ts(e) for e in self.watering_entries(plant_id)]
 
+    def typed_entries(self, plant_id: str, care_type: str) -> list[dict[str, Any]]:
+        """Return a plant's entries of one type, newest first."""
+        own = [
+            e
+            for e in self.journal
+            if e["plant_id"] == plant_id and e["type"] == care_type
+        ]
+        return sorted(own, key=_ts, reverse=True)
+
     def last_entry(self, plant_id: str, care_type: str) -> dict[str, Any] | None:
         """Return the newest entry of a type for a plant."""
         matches = [

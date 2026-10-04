@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -23,10 +24,11 @@ from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_utc_time_change,
 )
-from homeassistant.util import dt as dt_util
+from homeassistant.util import dt as dt_util, ulid as ulid_util
 
 from .const import (
     BATTERY_LOW,
+    CARE_PHOTO,
     CARE_WATERED,
     DEFAULT_INTERVAL,
     DEFAULT_SNOOZE,
@@ -54,7 +56,9 @@ from .engine.status import (
     evaluate,
 )
 from .engine.thresholds import default_thresholds
+from .imaging import CleanImage
 from .models import PlantConfig
+from .photos import archive_folders, delete_photo, photo_root, write_photo
 from .push import Notifier
 from .repairs import OFFLINE_REPAIR_AFTER, async_clear_offline, async_raise_offline
 from .species.db import Species, SpeciesDb
@@ -487,13 +491,89 @@ class PlantRuntime:
     def async_delete_entry(self, entry_id: str) -> None:
         """Remove a journal entry of this plant (for example a wrong tap).
 
-        A deleted detected watering is remembered, so it is not found again.
+        A deleted detected watering is remembered, so it is not found again;
+        a deleted photo takes its files along.
         """
         entry = self.hub.storage.async_delete_entry(entry_id)
         if entry and entry["source"] == SOURCE_AUTO and (ts := _parse(entry["ts"])):
             self.tracker.reject(ts)
+        if entry and entry["type"] == CARE_PHOTO:
+            self._forget_photo(entry.get("data", {}).get("photo_id"))
         self.tracker.update_forecast(dt_util.utcnow())
         self.async_evaluate()
+
+    # ---- photos -----------------------------------------------------------
+
+    def photos(self) -> list[dict[str, Any]]:
+        """Return the photo entries, newest first."""
+        return self.hub.storage.typed_entries(self.config.plant_id, CARE_PHOTO)
+
+    def photo_entry(self, photo_id: str) -> dict[str, Any] | None:
+        """Return the journal entry of one photo."""
+        return next(
+            (e for e in self.photos() if e.get("data", {}).get("photo_id") == photo_id),
+            None,
+        )
+
+    @property
+    def cover_photo(self) -> dict[str, Any] | None:
+        """Return the chosen cover photo's entry, else the newest photo's."""
+        photos = self.photos()
+        chosen = self._settings.get("cover_photo")
+        return next(
+            (p for p in photos if p["data"]["photo_id"] == chosen),
+            photos[0] if photos else None,
+        )
+
+    async def async_add_photo(
+        self, clean: CleanImage, *, note: str | None, user_id: str | None
+    ) -> dict[str, Any]:
+        """Store a cleaned photo and log it."""
+        photo_id = ulid_util.ulid_now()
+        await self.hass.async_add_executor_job(
+            write_photo, self.hass, self.config.plant_id, photo_id, clean
+        )
+        entry = self.hub.storage.async_add_entry(
+            self.config.plant_id,
+            CARE_PHOTO,
+            "card",
+            note=note,
+            user_id=user_id,
+            data={
+                "photo_id": photo_id,
+                "width": clean.width,
+                "height": clean.height,
+                "bytes": len(clean.full),
+            },
+        )
+        self.async_evaluate()
+        return entry
+
+    @callback
+    def async_set_cover(self, photo_id: str | None) -> None:
+        """Choose the cover photo; None goes back to the newest one."""
+        if photo_id is None:
+            self._settings.pop("cover_photo", None)
+        else:
+            self._settings["cover_photo"] = photo_id
+        self.hub.storage.async_save_data()
+        self.async_evaluate()
+
+    @callback
+    def _forget_photo(self, photo_id: str | None) -> None:
+        if not photo_id:
+            return
+        if self._settings.get("cover_photo") == photo_id:
+            self._settings.pop("cover_photo")
+            self.hub.storage.async_save_data()
+        self.hub.entry.async_create_task(
+            self.hass, self._async_delete_files(photo_id), f"rootwise_photo_{photo_id}"
+        )
+
+    async def _async_delete_files(self, photo_id: str) -> None:
+        await self.hass.async_add_executor_job(
+            delete_photo, self.hass, self.config.plant_id, photo_id
+        )
 
     @callback
     def async_snooze(self, duration: timedelta = DEFAULT_SNOOZE) -> None:
@@ -562,6 +642,7 @@ class RootwiseHub:
         self._unsub_tick: CALLBACK_TYPE | None = None
         self._ready = False
         self.notifier = Notifier(self)
+        self.photo_lock = asyncio.Lock()
         for subentry in entry.subentries.values():
             if subentry.subentry_type != SUBENTRY_PLANT:
                 continue
@@ -584,6 +665,9 @@ class RootwiseHub:
         self._ready = True
         self.async_notify()
         self.notifier.async_start()
+        self.entry.async_create_task(
+            self.hass, self._async_archive_photos(), "rootwise_archive_photos"
+        )
         self._unsub_tick = async_track_utc_time_change(
             self.hass, self._on_tick, minute=0, second=7
         )
@@ -597,6 +681,14 @@ class RootwiseHub:
         for plant in self.plants.values():
             plant.async_stop()
         await self.storage.async_flush()
+
+    async def _async_archive_photos(self) -> None:
+        """Keep the photos of removed plants, out of the way."""
+        moved = await self.hass.async_add_executor_job(
+            archive_folders, photo_root(self.hass), set(self.plants)
+        )
+        if moved:
+            _LOGGER.info("Moved photos of removed plants to the archive: %s", moved)
 
     @callback
     def _on_tick(self, _now: datetime) -> None:

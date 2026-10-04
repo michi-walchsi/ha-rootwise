@@ -79,6 +79,8 @@ CARE_TYPES: Final = [
     "note",
 ]
 CARE_SENSOR_MOVED: Final = "sensor_moved"
+# A photo is a journal entry too, but not logged like care (it needs a file).
+CARE_PHOTO: Final = "photo"
 # Journal source of waterings Rootwise found in the sensor data itself.
 SOURCE_AUTO: Final = "auto"
 EVENT_WATERING_DETECTED: Final = "rootwise_watering_detected"
@@ -106,6 +108,7 @@ CARE_NAMES: Final[dict[str, dict[str, str]]] = {
         "pruned": "Geschnitten",
         "sensor_moved": "Sensor umgesteckt",
         "note": "Notiz",
+        "photo": "Foto",
     },
     "en": {
         "watered": "Watered",
@@ -117,6 +120,7 @@ CARE_NAMES: Final[dict[str, dict[str, str]]] = {
         "pruned": "Pruned",
         "sensor_moved": "Sensor moved",
         "note": "Note",
+        "photo": "Photo",
     },
 }
 

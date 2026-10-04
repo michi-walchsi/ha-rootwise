@@ -10,7 +10,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.auth.permissions.const import POLICY_CONTROL
 from homeassistant.components.websocket_api import async_register_command
 from homeassistant.components.websocket_api.connection import ActiveConnection
 from homeassistant.components.websocket_api.decorators import websocket_command
@@ -20,7 +19,6 @@ from homeassistant.helpers import (
     area_registry as ar,
     config_validation as cv,
     device_registry as dr,
-    entity_registry as er,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
@@ -39,6 +37,7 @@ from .engine.amount import watering_amount
 from .engine.chart import resample, step_for
 from .engine.measure import round_value
 from .hub import FutureTimeError, species_range
+from .permissions import may_log, plant_entity_ids
 
 if TYPE_CHECKING:
     from .hub import PlantRuntime, RootwiseHub
@@ -61,6 +60,8 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ws_journal,
         ws_reset_thresholds,
         ws_history,
+        ws_photos,
+        ws_set_cover,
     ):
         async_register_command(hass, command)
 
@@ -68,17 +69,6 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
 def _hub(hass: HomeAssistant) -> RootwiseHub | None:
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     return entries[0].runtime_data if entries else None
-
-
-def _entity_ids(hass: HomeAssistant, hub: RootwiseHub, plant_id: str) -> dict[str, str]:
-    prefix = f"{plant_id}_"
-    return {
-        entity.unique_id.removeprefix(prefix): entity.entity_id
-        for entity in er.async_entries_for_config_entry(
-            er.async_get(hass), hub.entry.entry_id
-        )
-        if entity.config_subentry_id == plant_id and entity.unique_id.startswith(prefix)
-    }
 
 
 def _device(
@@ -129,6 +119,19 @@ def _species(hass: HomeAssistant, plant: PlantRuntime) -> dict[str, Any]:
     }
 
 
+def _cover(plant: PlantRuntime) -> dict[str, Any] | None:
+    cover = plant.cover_photo
+    if cover is None:
+        return None
+    data = cover["data"]
+    return {
+        "id": data["photo_id"],
+        "ts": cover["ts"],
+        "width": data["width"],
+        "height": data["height"],
+    }
+
+
 def _pot(plant: PlantRuntime) -> dict[str, Any]:
     config = plant.config
     style = plant.species.watering_style if plant.species else ""
@@ -174,7 +177,7 @@ def _plant(
         "id": plant_id,
         "name": plant.config.name,
         **_device(hass, hub, plant_id),
-        "entity_ids": _entity_ids(hass, hub, plant_id),
+        "entity_ids": plant_entity_ids(hass, hub, plant_id),
         "status": state.status.value if state else None,
         "moisture_level": state.moisture_level.value
         if state and state.moisture_level
@@ -185,6 +188,7 @@ def _plant(
         "last_watered": watered.isoformat() if watered else None,
         "species": _species(hass, plant),
         "pot": _pot(plant),
+        "photo": _cover(plant),
         "measurements": _measurements(plant),
         "next_watering": _next_watering(plant),
         "thresholds": _thresholds(plant),
@@ -322,13 +326,7 @@ def _may_log(
     hub: RootwiseHub,
     plant_id: str,
 ) -> bool:
-    user = connection.user
-    if user.is_admin:
-        return True
-    entity_id = _entity_ids(hass, hub, plant_id).get(CARE_WATERED)
-    return entity_id is not None and user.permissions.check_entity(
-        entity_id, POLICY_CONTROL
-    )
+    return may_log(hass, connection.user, hub, plant_id)
 
 
 @websocket_command(
@@ -447,3 +445,61 @@ def ws_history(
     connection.send_result(
         msg["id"], _history(hub, plant, msg["days"], dt_util.utcnow())
     )
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/photos/list", vol.Required("plant_id"): str}
+)
+@callback
+def ws_photos(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Return a plant's photos, newest first, and the cover photo."""
+    if (found := _plant_or_error(hass, connection, msg)) is None:
+        return
+    _, plant = found
+    cover = plant.cover_photo
+    connection.send_result(
+        msg["id"],
+        {
+            "photos": [
+                {
+                    "entry_id": e["id"],
+                    "photo_id": e["data"]["photo_id"],
+                    "ts": e["ts"],
+                    "width": e["data"]["width"],
+                    "height": e["data"]["height"],
+                    "note": e.get("note"),
+                    "user_id": e.get("user_id"),
+                }
+                for e in plant.photos()
+            ],
+            "cover": cover["data"]["photo_id"] if cover else None,
+        },
+    )
+
+
+@websocket_command(
+    {
+        vol.Required("type"): "rootwise/photos/cover",
+        vol.Required("plant_id"): str,
+        vol.Required("photo_id"): vol.Any(None, str),
+    }
+)
+@callback
+def ws_set_cover(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Choose the cover photo, or None for the newest."""
+    if (found := _plant_or_error(hass, connection, msg)) is None:
+        return
+    hub, plant = found
+    if not _may_log(hass, connection, hub, plant.config.plant_id):
+        connection.send_error(msg["id"], "unauthorized", "Not allowed")
+        return
+    photo_id = msg["photo_id"]
+    if photo_id is not None and plant.photo_entry(photo_id) is None:
+        connection.send_error(msg["id"], "not_found", "Unknown photo")
+        return
+    plant.async_set_cover(photo_id)
+    connection.send_result(msg["id"])
