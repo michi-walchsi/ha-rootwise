@@ -11,13 +11,19 @@ interface Route {
   path: string;
 }
 
-type Page = { kind: "overview" } | { kind: "plant" | "calibrate"; id: string };
+type Page =
+  | { kind: "overview" }
+  | { kind: "add" }
+  | { kind: "plant"; id: string }
+  | { kind: "calibrate"; id: string };
 
-/** Route below /rootwise: "", "/plant/<id>" or "/plant/<id>/calibrate". */
+/** Route below /rootwise: "", "/add", "/plant/<id>" or "/plant/<id>/calibrate". */
 export function pageFor(path: string | undefined): Page {
+  if (path === "/add") return { kind: "add" };
   const match = /^\/plant\/([^/]+)(\/calibrate)?/.exec(path ?? "");
   if (!match?.[1]) return { kind: "overview" };
-  return { kind: match[2] ? "calibrate" : "plant", id: decodeURIComponent(match[1]) };
+  const id = decodeURIComponent(match[1]);
+  return match[2] ? { kind: "calibrate", id } : { kind: "plant", id };
 }
 
 function areas(plants: Plant[]): { id: string; name: string }[] {
@@ -37,14 +43,19 @@ export class RootwisePanel extends RootwiseCardBase {
 
   protected override render(): TemplateResult {
     const page = pageFor(this.route?.path);
-    const plant = page.kind === "overview" ? undefined : this.payload?.plants.find((p) => p.id === page.id);
+    const plant =
+      page.kind === "plant" || page.kind === "calibrate"
+        ? this.payload?.plants.find((p) => p.id === page.id)
+        : undefined;
     const back = page.kind === "calibrate" ? plantPath(page.id) : PANEL_PATH;
     const title =
       page.kind === "overview"
         ? this.t("panel.title")
-        : page.kind === "calibrate"
-          ? this.t("calibration.title")
-          : (plant?.name ?? "");
+        : page.kind === "add"
+          ? this.t("wizard.title")
+          : page.kind === "calibrate"
+            ? this.t("calibration.title")
+            : (plant?.name ?? "");
     return html`
       <header class="toolbar">
         ${page.kind !== "overview"
@@ -71,9 +82,11 @@ export class RootwisePanel extends RootwiseCardBase {
       <main>
         ${page.kind === "overview"
           ? this.renderOverview()
-          : page.kind === "calibrate"
-            ? html`<rootwise-calibration-page .hass=${this.hass} .plantId=${page.id}></rootwise-calibration-page>`
-            : this.renderPlant(page.id)}
+          : page.kind === "add"
+            ? html`<rootwise-wizard-page .hass=${this.hass}></rootwise-wizard-page>`
+            : page.kind === "calibrate"
+              ? html`<rootwise-calibration-page .hass=${this.hass} .plantId=${page.id}></rootwise-calibration-page>`
+              : this.renderPlant(page.id)}
       </main>
     `;
   }
@@ -100,6 +113,11 @@ export class RootwisePanel extends RootwiseCardBase {
         .hass=${this.hass}
         ${configure({ type: "custom:rootwise-overview-card", area_id: area ?? undefined, show_tiles: true })}
       ></rootwise-overview-card>
+      ${this.hass?.user?.is_admin
+        ? html`<button class="fab" @click=${() => navigate(`${PANEL_PATH}/add`)}>
+            <ha-icon icon="mdi:plus"></ha-icon>${this.t("panel.add")}
+          </button>`
+        : nothing}
     `;
   }
 
@@ -160,6 +178,27 @@ export class RootwisePanel extends RootwiseCardBase {
         display: flex;
         flex-direction: column;
         gap: 12px;
+      }
+      .fab {
+        position: fixed;
+        right: calc(16px + env(safe-area-inset-right, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        z-index: 3;
+        min-height: 56px;
+        padding: 0 22px 0 18px;
+        border: 0;
+        border-radius: 28px;
+        background: var(--rw-accent);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+      }
+      main {
+        padding-bottom: 88px;
       }
       .chips {
         display: flex;

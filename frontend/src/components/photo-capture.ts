@@ -22,6 +22,8 @@ export class RootwisePhotoCapture extends LitElement {
   @property() plantId = "";
   @property({ type: Boolean }) open = false;
   @property({ type: Boolean, reflect: true }) dark = false;
+  /** Hand the picture back instead of uploading it (the wizard: no plant yet). */
+  @property({ type: Boolean }) local = false;
   @state() private mode: Mode = "choose";
   @state() private preview?: string;
   @state() private note = "";
@@ -158,6 +160,13 @@ export class RootwisePhotoCapture extends LitElement {
   };
 
   private save = async (): Promise<void> => {
+    if (this.local && this.photo) {
+      this.dispatchEvent(
+        new CustomEvent("rootwise-photo-taken", { detail: { photo: this.photo }, bubbles: true, composed: true }),
+      );
+      this.dialog?.close();
+      return;
+    }
     if (!this.hass || !this.photo || this.saving) return;
     this.saving = true;
     this.error = undefined;
@@ -250,7 +259,7 @@ export class RootwisePhotoCapture extends LitElement {
       <div class="row">
         <button class="secondary" ?disabled=${this.saving} @click=${this.again}>${this.t("photo.retake")}</button>
         <button class="primary" ?disabled=${this.saving} @click=${this.save}>
-          ${this.saving ? this.t("photo.saving") : this.t("photo.save")}
+          ${this.saving ? this.t("photo.saving") : this.t(this.local ? "photo.use" : "photo.save")}
         </button>
       </div>
     `;

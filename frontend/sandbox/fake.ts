@@ -597,6 +597,80 @@ async function callWS<T>(message: Record<string, unknown>): Promise<T> {
     }
     return calibrationState(plant) as T;
   }
+  if (message.type === "rootwise/species/search") {
+    const query = String(message.query).toLowerCase();
+    const offline = [
+      { id: "monstera_deliciosa", scientific: "Monstera deliciosa", common: "Monstera" },
+      { id: "epipremnum_aureum", scientific: "Epipremnum aureum", common: "Efeutute" },
+      { id: "ficus_lyrata", scientific: "Ficus lyrata", common: "Geigenfeige" },
+      { id: "zamioculcas_zamiifolia", scientific: "Zamioculcas zamiifolia", common: "Glücksfeder" },
+    ].filter((s) => `${s.scientific} ${s.common}`.toLowerCase().includes(query));
+    return {
+      opb: true,
+      opb_failed: false,
+      species: [
+        ...(query.startsWith("mon") ? [{ source: "openplantbook", pid: "monstera adansonii", label: "Monstera adansonii" }] : []),
+        ...offline.map((s) => ({ source: "offline", ...s, label: `${s.common} (${s.scientific})` })),
+      ],
+    } as T;
+  }
+  if (message.type === "rootwise/species/info") {
+    return { info: { scientific: "Monstera adansonii", common: "Affenmonstera" }, species: null } as T;
+  }
+  if (message.type === "rootwise/sensors/suggest") {
+    const room = (id: string) => ({ wohnzimmer: "Wohnzimmer", kueche: "Küche", schlafzimmer: "Schlafzimmer" })[id] ?? null;
+    const c = (entity_id: string, name: string, state: string, unit: string, area: string, in_use = false) => ({
+      entity_id, name, state, unit, area, in_use,
+    });
+    const area = room(String(message.area_id ?? ""));
+    const all = {
+      moisture_sensor: [
+        c("sensor.monstera_soil", "Monstera Bodenfeuchte", "74", "%", "Wohnzimmer", true),
+        c("sensor.soil_probe_2", "Bodensensor 2 Bodenfeuchte", "41", "%", "Wohnzimmer"),
+        c("sensor.kitchen_soil", "Küche Bodenfeuchte", "33", "%", "Küche"),
+      ],
+      temperature_sensor: [
+        c("sensor.soil_probe_2_temperature", "Bodensensor 2 Temperatur", "21.8", "°C", "Wohnzimmer"),
+        c("sensor.living_temperature", "Wohnzimmer Temperatur", "22.4", "°C", "Wohnzimmer"),
+      ],
+      humidity_sensor: [c("sensor.living_humidity", "Wohnzimmer Luftfeuchte", "48", "%", "Wohnzimmer")],
+      illuminance_sensor: [],
+      conductivity_sensor: [],
+      battery_sensor: [c("sensor.soil_probe_2_battery", "Bodensensor 2 Batterie", "96", "%", "Wohnzimmer")],
+    };
+    const first = (list: { area: string }[]) => [...list].sort((a, b) => Number(b.area === area) - Number(a.area === area));
+    const moisture = message.moisture_sensor ? String(message.moisture_sensor) : null;
+    return {
+      suggested:
+        moisture === "sensor.soil_probe_2"
+          ? { temperature_sensor: "sensor.soil_probe_2_temperature", battery_sensor: "sensor.soil_probe_2_battery", humidity_sensor: "sensor.living_humidity" }
+          : area === "Wohnzimmer"
+            ? { temperature_sensor: "sensor.living_temperature", humidity_sensor: "sensor.living_humidity" }
+            : {},
+      candidates: Object.fromEntries(Object.entries(all).map(([role, list]) => [role, first(list)])),
+    } as T;
+  }
+  if (message.type === "rootwise/plants/create") {
+    const id = `p-new-${Date.now()}`;
+    const template = plants.find((p) => p.id === "p-calathea");
+    if (template) {
+      plants.push({
+        ...structuredClone(template),
+        id,
+        name: String(message.name).trim(),
+        device_id: `d-${id}`,
+        area_id: message.area_id ? String(message.area_id) : null,
+        area: message.area_id ? (({ wohnzimmer: "Wohnzimmer", kueche: "Küche" } as Record<string, string>)[String(message.area_id)] ?? null) : null,
+        recent: [],
+        last_watered: null,
+        photo: null,
+        calibration: null,
+        thresholds: template.thresholds ? { ...template.thresholds, waterings: 4 } : null,
+      });
+      setTimeout(push, 600);
+    }
+    return { plant_id: id } as T;
+  }
   if (message.type === "rootwise/photos/list") {
     const id = String(message.plant_id);
     return {
@@ -640,6 +714,12 @@ export function hass(dark: boolean): HomeAssistant {
     connection,
     callWS,
     fetchWithAuth,
+    areas: {
+      wohnzimmer: { area_id: "wohnzimmer", name: "Wohnzimmer" },
+      kueche: { area_id: "kueche", name: "Küche" },
+      schlafzimmer: { area_id: "schlafzimmer", name: "Schlafzimmer" },
+      bad: { area_id: "bad", name: "Bad" },
+    },
     config: { external_url: "https://home.example.ts.net", internal_url: "http://192.168.1.5:8123" },
     language: "de",
     user: { id: "u1", is_admin: true },

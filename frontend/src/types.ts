@@ -139,6 +139,41 @@ export interface CalibrationState {
   scale: [number, number];
 }
 
+export type SensorRole =
+  | "moisture_sensor"
+  | "temperature_sensor"
+  | "humidity_sensor"
+  | "illuminance_sensor"
+  | "conductivity_sensor"
+  | "battery_sensor";
+
+export interface SensorCandidate {
+  entity_id: string;
+  name: string;
+  state: string;
+  unit: string | null;
+  area: string | null;
+  /** A soil sensor that another plant already has. */
+  in_use: boolean;
+}
+
+/** rootwise/sensors/suggest */
+export interface SensorSuggestions {
+  suggested: Partial<Record<SensorRole, string>>;
+  candidates: Record<SensorRole, SensorCandidate[]>;
+}
+
+export type SpeciesHit =
+  | { source: "openplantbook"; pid: string; label: string }
+  | { source: "offline"; id: string; label: string; scientific: string; common: string };
+
+/** rootwise/species/search */
+export interface SpeciesSearch {
+  opb: boolean;
+  opb_failed: boolean;
+  species: SpeciesHit[];
+}
+
 export interface PhotoInfo {
   id: string;
   ts: string;
@@ -234,6 +269,7 @@ export interface HomeAssistant {
   /** fetch with the user's token: photos are only served to logged-in users. */
   fetchWithAuth(path: string, init?: RequestInit): Promise<Response>;
   config?: { external_url?: string | null; internal_url?: string | null };
+  areas?: Record<string, { area_id: string; name: string }>;
   language: string;
   locale?: { language: string };
   user?: { id: string; is_admin: boolean; name?: string };

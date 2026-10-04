@@ -12,6 +12,7 @@ import { defineWhenReady } from "./define";
 import { RootwiseCalibrationPage } from "./panel/calibration-page";
 import { RootwisePlantPage } from "./panel/plant-page";
 import { RootwisePanel } from "./panel/rootwise-panel";
+import { RootwiseWizardPage } from "./panel/wizard-page";
 import { localize } from "./i18n";
 import type { HomeAssistant } from "./types";
 
@@ -37,6 +38,7 @@ void defineWhenReady([
   ["rootwise-plant-card", RootwisePlantCard],
   ["rootwise-plant-page", RootwisePlantPage],
   ["rootwise-calibration-page", RootwiseCalibrationPage],
+  ["rootwise-wizard-page", RootwiseWizardPage],
   ["rootwise-panel", RootwisePanel],
 ]);
 

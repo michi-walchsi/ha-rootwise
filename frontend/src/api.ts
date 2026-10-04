@@ -5,6 +5,9 @@ import type {
   HomeAssistant,
   JournalEntry,
   PlantsPayload,
+  SensorRole,
+  SensorSuggestions,
+  SpeciesSearch,
 } from "./types";
 
 type Listener = (payload: PlantsPayload) => void;
@@ -115,3 +118,39 @@ export function applyCalibration(
   return hass.callWS<CalibrationState>({ type: "rootwise/calibration/apply", plant_id: plantId, dry, wet });
 }
 
+/** What the wizard sends to rootwise/plants/create. */
+export interface NewPlant {
+  name: string;
+  area_id?: string | null;
+  species?: string | null;
+  opb_pid?: string | null;
+  sensors?: Partial<Record<SensorRole, string | null>>;
+  pot?: { pot_diameter: number; pot_material: string; drainage: boolean; window: string; location: string };
+}
+
+export async function createPlant(hass: HomeAssistant, plant: NewPlant): Promise<string> {
+  const result = await hass.callWS<{ plant_id: string }>({ type: "rootwise/plants/create", ...plant });
+  return result.plant_id;
+}
+
+export function searchSpecies(hass: HomeAssistant, query: string): Promise<SpeciesSearch> {
+  return hass.callWS<SpeciesSearch>({ type: "rootwise/species/search", query });
+}
+
+export function speciesInfo(
+  hass: HomeAssistant,
+  pid: string,
+): Promise<{ info: { scientific: string; common?: string | null; image_url?: string | null }; species: string | null }> {
+  return hass.callWS({ type: "rootwise/species/info", pid });
+}
+
+export function suggestSensors(
+  hass: HomeAssistant,
+  areaId: string | null,
+  moisture: string | null,
+): Promise<SensorSuggestions> {
+  const message: Record<string, unknown> = { type: "rootwise/sensors/suggest" };
+  if (areaId) message.area_id = areaId;
+  if (moisture) message.moisture_sensor = moisture;
+  return hass.callWS<SensorSuggestions>(message);
+}

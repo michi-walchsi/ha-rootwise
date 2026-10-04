@@ -9,6 +9,10 @@ describe("pageFor", () => {
     expect(pageFor("/somewhere")).toEqual({ kind: "overview" });
   });
 
+  it("opens the wizard", () => {
+    expect(pageFor("/add")).toEqual({ kind: "add" });
+  });
+
   it("opens the calibration assistant of a plant", () => {
     expect(pageFor("/plant/01J9ABC/calibrate")).toEqual({ kind: "calibrate", id: "01J9ABC" });
   });
