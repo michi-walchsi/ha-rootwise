@@ -1,6 +1,7 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
 import { deleteCare, logCare } from "../api";
+import { avatar, avatarStyles } from "../components/avatar";
 import { language } from "../i18n";
 import { bySeverity, checklist, dueLine, duePlants, inArea, summary, tile } from "../overview-view";
 import { amountText } from "../plant-info";
@@ -215,9 +216,12 @@ export class RootwiseOverviewCard extends RootwiseCardBase {
   private renderTile(plant: Plant): TemplateResult {
     const info = this.hass ? tile(this.hass, plant, new Date()) : { color: "", text: "" };
     return html`
-      <button class="tile" @click=${() => this.openPlant(plant)}>
-        <span class="tile-name"><span class="dot" style="background:${info.color}"></span>${plant.name}</span>
-        <span class="muted tiny">${info.text}</span>
+      <button class="tile" style="--ring:${info.color}" @click=${() => this.openPlant(plant)}>
+        ${avatar(this.hass, plant)}
+        <span class="tile-text">
+          <span class="tile-name">${plant.name}</span>
+          <span class="muted tiny">${info.text}</span>
+        </span>
       </button>
     `;
   }
@@ -236,6 +240,7 @@ export class RootwiseOverviewCard extends RootwiseCardBase {
 
   static override styles = [
     theme,
+    avatarStyles,
     css`
       ha-card {
         overflow: hidden;
@@ -375,7 +380,7 @@ export class RootwiseOverviewCard extends RootwiseCardBase {
       }
       .tiles {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 6px;
         padding: 10px 12px 14px;
         border-top: 1px solid var(--rw-line);
@@ -388,28 +393,33 @@ export class RootwiseOverviewCard extends RootwiseCardBase {
         border-radius: 12px;
         background: var(--rw-track);
         display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-        gap: 2px;
+        align-items: center;
+        gap: 10px;
         text-align: left;
       }
-      .tile-name {
+      /* The status colour as a ring; the line below says it in words. */
+      .tile .avatar {
+        width: 34px;
+        height: 34px;
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+        margin: 2px;
+      }
+      .tile .avatar ha-icon {
+        --mdc-icon-size: 20px;
+      }
+      .tile-text {
+        min-width: 0;
         display: flex;
-        align-items: center;
-        gap: 5px;
-        max-width: 100%;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .tile-name {
         font-size: 12px;
         font-weight: 700;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-      }
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
       }
     `,
   ];

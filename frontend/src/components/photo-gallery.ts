@@ -30,8 +30,8 @@ export class RootwisePhotoGallery extends LitElement {
     return localize(this.hass, key, vars);
   }
 
-  /** Open the camera / gallery dialog (also used by the page's quick action). */
-  capture(): void {
+  /** Open the camera / gallery dialog. */
+  private capture(): void {
     this.capturing = true;
   }
 

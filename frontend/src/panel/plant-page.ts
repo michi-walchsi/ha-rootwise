@@ -1,40 +1,22 @@
 import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import { fetchHistory } from "../api";
 import { calibrateHistory } from "../calibration";
+import { HistoryController } from "../history-controller";
 import { navigate, plantPath } from "../navigate";
 import { RootwiseCardBase } from "../cards/base";
 import { language } from "../i18n";
 import { amountText, potLine, speciesFacts, toxicityInfo, wateringHow } from "../plant-info";
 import { theme } from "../theme";
-import type { HistoryPayload, Plant } from "../types";
+import type { Plant } from "../types";
 import { configure } from "./configure";
 
-const REFRESH_MS = 10 * 60 * 1000;
 const TOX_ICONS = { cats: "mdi:cat", dogs: "mdi:dog", humans: "mdi:human-child" } as const;
 
 /** One plant in the panel: picture, the plant card, chart, pot and species. */
 export class RootwisePlantPage extends RootwiseCardBase {
   @property() plantId = "";
   @state() private days: 14 | 30 = 14;
-  @state() private history?: HistoryPayload;
-
-  private historyKey = "";
-  private refreshTimer?: number;
-
-  override connectedCallback(): void {
-    super.connectedCallback();
-    // Readings arrive all the time; the chart catches up every few minutes.
-    this.refreshTimer = window.setInterval(() => {
-      this.historyKey = "";
-      this.requestUpdate();
-    }, REFRESH_MS);
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    window.clearInterval(this.refreshTimer);
-  }
+  private readonly history = new HistoryController(this);
 
   private get plant(): Plant | undefined {
     return this.payload?.plants.find((p) => p.id === this.plantId);
@@ -42,25 +24,7 @@ export class RootwisePlantPage extends RootwiseCardBase {
 
   protected override updated(changed: PropertyValues<this>): void {
     super.updated(changed);
-    const plant = this.plant;
-    if (!plant || !this.hass) return;
-    // Reload after care was logged or deleted, a new calibration, or for another range.
-    const key = [plant.id, this.days, plant.last_watered, plant.recent[0]?.id, plant.calibration?.at].join("|");
-    if (key === this.historyKey) return;
-    if (changed.has("plantId")) this.history = undefined;
-    this.historyKey = key;
-    void this.loadHistory(plant.id, this.days);
-  }
-
-  private async loadHistory(plantId: string, days: 14 | 30): Promise<void> {
-    if (!this.hass) return;
-    try {
-      const data = await fetchHistory(this.hass, plantId, days);
-      if (this.plantId === plantId && this.days === days) this.history = data;
-    } catch {
-      // Keep what is shown; the next change or refresh tries again.
-      this.historyKey = "";
-    }
+    this.history.sync(this.hass, this.plant, this.days);
   }
 
   protected override render(): TemplateResult {
@@ -139,7 +103,8 @@ export class RootwisePlantPage extends RootwiseCardBase {
 
   private renderChart(): TemplateResult {
     // Same scale as the chart: calibrated percent if the probe is calibrated.
-    const thresholds = this.history ? calibrateHistory(this.history).thresholds : null;
+    const data = this.history.data;
+    const thresholds = data ? calibrateHistory(data).thresholds : null;
     return html`
       <section class="surface">
         <div class="section-head">
@@ -156,7 +121,7 @@ export class RootwisePlantPage extends RootwiseCardBase {
           </div>
         </div>
         <rootwise-moisture-chart
-          .data=${this.history}
+          .data=${data}
           language=${language(this.hass)}
           ?dark=${Boolean(this.hass?.themes?.darkMode)}
           height="200"

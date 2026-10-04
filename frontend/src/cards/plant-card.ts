@@ -1,8 +1,10 @@
-import { css, html, nothing, type TemplateResult } from "lit";
+import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
 import { canDelete, deleteCare, logCare, resetThresholds, snooze } from "../api";
 import { moistureShown } from "../calibration";
+import { avatar, avatarStyles } from "../components/avatar";
 import { formatNumber, relativeTime, scale, shortDateTime } from "../format";
+import { HistoryController } from "../history-controller";
 import { language } from "../i18n";
 import { RootwiseCardBase, editorLabel, errorText } from "./base";
 import {
@@ -31,6 +33,8 @@ import type {
 
 interface PlantCardConfig extends LovelaceCardConfig, PlantRef {
   show_history?: boolean;
+  /** The 14-day moisture chart (not when embedded: the page has a big one). */
+  show_chart?: boolean;
   /** Inside the plant page, which shows name and picture itself. */
   embedded?: boolean;
 }
@@ -42,6 +46,7 @@ interface Toast {
 
 const UNDO_SECONDS = 10;
 const LONG_PRESS_MS = 500;
+const CHART_DAYS = 14;
 
 export class RootwisePlantCard extends RootwiseCardBase {
   @state() private config?: PlantCardConfig;
@@ -50,7 +55,9 @@ export class RootwisePlantCard extends RootwiseCardBase {
   @state() private toast?: Toast;
   @state() private confirmDelete?: string;
   @state() private busy = false;
+  @state() private capturing = false;
 
+  private readonly history = new HistoryController(this);
   private pressTimer?: number;
   private longPressed = false;
   private toastTimer?: number;
@@ -64,6 +71,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
           required: true,
           selector: { device: { filter: [{ integration: "rootwise" }] } },
         },
+        { name: "show_chart", selector: { boolean: {} } },
         { name: "show_history", selector: { boolean: {} } },
       ],
       computeLabel: editorLabel,
@@ -71,15 +79,15 @@ export class RootwisePlantCard extends RootwiseCardBase {
   }
 
   static getStubConfig(hass: HomeAssistant): Partial<PlantCardConfig> {
-    return { device_id: firstPlantDevice(hass), show_history: true };
+    return { device_id: firstPlantDevice(hass), show_chart: true, show_history: true };
   }
 
   setConfig(config: PlantCardConfig): void {
-    this.config = { show_history: true, ...config };
+    this.config = { show_history: true, show_chart: true, ...config };
   }
 
   getCardSize(): number {
-    return this.config?.show_history ? 8 : 5;
+    return 5 + (this.config?.show_history ? 3 : 0) + (this.showsChart ? 2 : 0);
   }
 
   getGridOptions() {
@@ -94,6 +102,16 @@ export class RootwisePlantCard extends RootwiseCardBase {
 
   private get plant(): Plant | undefined {
     return this.payload && this.config ? findPlant(this.payload.plants, this.config) : undefined;
+  }
+
+  private get showsChart(): boolean {
+    return Boolean(this.config?.show_chart && !this.config.embedded);
+  }
+
+  protected override updated(changed: PropertyValues<this>): void {
+    super.updated(changed);
+    const plant = this.plant;
+    if (this.showsChart && plant?.measurements.soil_moisture) this.history.sync(this.hass, plant, CHART_DAYS);
   }
 
   // ---- actions ------------------------------------------------------------
@@ -216,6 +234,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
               ${hintTexts.map((text) => html`<li><ha-icon icon="mdi:information-outline"></ha-icon>${text}</li>`)}
             </ul>`
           : nothing}
+        ${this.showsChart && plant.measurements.soil_moisture ? this.renderChart() : nothing}
         ${this.renderLearned(plant)}
         <div class="when-block">
           ${this.renderNext(plant)}
@@ -226,7 +245,31 @@ export class RootwisePlantCard extends RootwiseCardBase {
         ${this.toast ? this.renderToast(this.toast) : nothing}
         ${this.config?.show_history ? this.renderHistory(plant) : nothing}
       </ha-card>
+      <rootwise-photo-capture
+        .hass=${this.hass}
+        plantId=${plant.id}
+        ?open=${this.capturing}
+        ?dark=${Boolean(this.hass?.themes?.darkMode)}
+        @rootwise-photo-closed=${() => (this.capturing = false)}
+        @rootwise-photo-added=${this.photoAdded}
+      ></rootwise-photo-capture>
     `;
+  }
+
+  private photoAdded = (): void => {
+    this.capturing = false;
+    this.showToast({ text: this.t("toast.photo") });
+  };
+
+  private renderChart(): TemplateResult {
+    return html`<rootwise-moisture-chart
+      class="chart"
+      .data=${this.history.data}
+      language=${language(this.hass)}
+      ?dark=${Boolean(this.hass?.themes?.darkMode)}
+      compact
+      height="110"
+    ></rootwise-moisture-chart>`;
   }
 
   private renderHead(plant: Plant): TemplateResult {
@@ -244,17 +287,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
           if (e.key === "Enter" || e.key === " ") this.openPlant(plant);
         }}
       >
-        <div class="avatar">
-          ${plant.species.image_url
-            ? html`<img
-                src=${plant.species.image_url}
-                alt=""
-                loading="lazy"
-                @error=${(e: Event) => ((e.target as HTMLElement).hidden = true)}
-              />`
-            : nothing}
-          <ha-icon icon="mdi:sprout"></ha-icon>
-        </div>
+        ${avatar(this.hass, plant)}
         <div class="titles">
           <div class="name">${plant.name}</div>
           <div class="status">
@@ -367,6 +400,8 @@ export class RootwisePlantCard extends RootwiseCardBase {
 
   private renderActions(plant: Plant): TemplateResult {
     const snoozeEntity = plant.entity_ids.snooze;
+    // Four buttons fit on a phone only when the photo one has no label.
+    const snoozable = Boolean(plant.needs_water && snoozeEntity);
     const logged = this.toast?.undo?.type === "watered";
     return html`
       <div class="actions">
@@ -383,11 +418,20 @@ export class RootwisePlantCard extends RootwiseCardBase {
           <ha-icon icon=${logged ? "mdi:check" : "mdi:watering-can"}></ha-icon>
           ${this.t("action.water")}
         </button>
-        ${plant.needs_water && snoozeEntity
+        ${snoozable && snoozeEntity
           ? html`<button class="secondary" @click=${() => this.hass && void snooze(this.hass, snoozeEntity)}>
               ${this.t("action.snooze")}
             </button>`
           : nothing}
+        <button
+          class="photo ${snoozable ? "icon" : ""}"
+          aria-label=${this.t("photo.add")}
+          title=${this.t("photo.add")}
+          @click=${() => (this.capturing = true)}
+        >
+          <ha-icon icon=${ICONS.photo ?? "mdi:camera"}></ha-icon
+          >${snoozable ? nothing : html`<span class="label">${this.t("photo.add_short")}</span>`}
+        </button>
         <button
           class="icon"
           aria-label=${this.t("action.more")}
@@ -500,6 +544,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
 
   static override styles = [
     theme,
+    avatarStyles,
     css`
       .raw {
         display: block;
@@ -512,6 +557,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
         flex-direction: column;
         gap: 12px;
         overflow: hidden;
+        container-type: inline-size;
       }
       .empty {
         padding: 8px 0;
@@ -537,27 +583,14 @@ export class RootwisePlantCard extends RootwiseCardBase {
         border-radius: 12px;
       }
       .avatar {
-        position: relative;
         width: 56px;
         height: 56px;
-        flex-shrink: 0;
-        border-radius: 50%;
-        overflow: hidden;
-        background: var(--rw-accent-soft);
-        color: var(--rw-accent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
       }
       .avatar ha-icon {
         --mdc-icon-size: 30px;
       }
-      .avatar img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+      .chart {
+        margin: -2px 0;
       }
       .titles {
         min-width: 0;
@@ -719,6 +752,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
       }
       .actions {
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
       }
       .actions button,
@@ -882,6 +916,42 @@ export class RootwisePlantCard extends RootwiseCardBase {
         color: var(--error-color, #b3261e);
         font-weight: 700;
         padding: 0 10px;
+      }
+      /* Half-width cards (last, so it wins): tighter buttons, photo icon only,
+         icon buttons at the 44 px touch minimum, bars on their own line. */
+      @container (max-width: 290px) {
+        .actions {
+          gap: 6px;
+        }
+        .actions button {
+          padding: 0 8px;
+        }
+        .actions .photo,
+        .actions .icon {
+          width: 44px;
+          padding: 0;
+        }
+        .actions .photo .label {
+          display: none;
+        }
+        /* The bar gets its own line under label and value. */
+        .bar-row {
+          grid-template-columns: 20px 1fr auto;
+          grid-template-areas: "icon label value" ". bar bar";
+          row-gap: 4px;
+        }
+        .bar-row ha-icon {
+          grid-area: icon;
+        }
+        .bar-row .label {
+          grid-area: label;
+        }
+        .bar-row .bar {
+          grid-area: bar;
+        }
+        .bar-row .value {
+          grid-area: value;
+        }
       }
     `,
   ];
