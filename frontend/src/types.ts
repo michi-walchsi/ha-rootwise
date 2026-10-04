@@ -84,6 +84,38 @@ export interface Plant {
   recent: JournalEntry[];
 }
 
+/** [epoch ms, mean, min, max] of one chart bin. */
+export type ChartPoint = [number, number, number, number];
+
+export interface ChartEvent {
+  id?: string;
+  ts: string;
+  type: string;
+  source: string;
+  data?: JournalEntry["data"];
+}
+
+export interface ForecastData {
+  due: string;
+  earliest: string;
+  latest: string;
+  level: number;
+  rate: number;
+  confidence: "high" | "medium" | "low";
+}
+
+/** rootwise/plant/history: soil moisture of the last days. */
+export interface HistoryPayload {
+  start: string;
+  end: string;
+  /** Seconds per bin. */
+  step: number;
+  points: ChartPoint[];
+  thresholds: Thresholds | null;
+  forecast: ForecastData | null;
+  events: ChartEvent[];
+}
+
 export interface PlantsPayload {
   loaded: boolean;
   vacation: boolean;

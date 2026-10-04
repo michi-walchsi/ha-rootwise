@@ -4,7 +4,14 @@
 
 import * as mdi from "@mdi/js";
 import "../src/index";
-import type { HomeAssistant, JournalEntry, Plant, PlantsPayload } from "../src/types";
+import type {
+  ChartPoint,
+  HistoryPayload,
+  HomeAssistant,
+  JournalEntry,
+  Plant,
+  PlantsPayload,
+} from "../src/types";
 
 // ---- stand-ins for Home Assistant's own elements ------------------------------
 
@@ -229,6 +236,68 @@ function entry(
   };
 }
 
+// ---- chart data ----------------------------------------------------------------
+
+const HOUR = 3_600_000;
+
+/** A pot drying with a daily wobble; each watering jumps, then drains a little. */
+function fakeHistory(plantId: string, days: number): HistoryPayload {
+  const plant = plants.find((p) => p.id === plantId);
+  const end = now;
+  const step = days > 16 ? 4 : 2;
+  // Whole-hour bins, as the backend sends them.
+  const start = Math.floor((end - days * 24 * HOUR) / (step * HOUR)) * step * HOUR;
+  const curves: Record<string, { from: number; rate: number; waterings: [number, number, number][] }> = {
+    // [hours ago, peak, settled]
+    "p-monstera": { from: 66, rate: 1.7, waterings: [[24 * 12.5, 88, 79], [18, 92, 78.7]] },
+    "p-calathea": { from: 58, rate: 3.4, waterings: [[24 * 11, 81, 74], [24 * 6, 79, 72]] },
+    "p-ficus": { from: 52, rate: 1.4, waterings: [[24 * 9, 70, 63]] },
+  };
+  const curve = curves[plantId];
+  if (!plant || !curve) {
+    return { start: iso((end - start) / HOUR), end: iso(0), step: step * 3600, points: [], thresholds: null, forecast: null, events: [] };
+  }
+  const value = (t: number): [number, number] => {
+    let level = curve.from - ((t - start) / (24 * HOUR)) * curve.rate;
+    let peak = level;
+    for (const [ago, top, settled] of curve.waterings) {
+      const at = end - ago * HOUR;
+      if (t < at) continue;
+      const drained = Math.min(1, (t - at) / (6 * HOUR));
+      level = settled - ((t - at) / (24 * HOUR)) * curve.rate + (top - settled) * (1 - drained);
+      peak = t - at < step * HOUR ? top : level;
+    }
+    const wobble = Math.sin(((t / HOUR) % 24) / 24 * 2 * Math.PI) * 0.7;
+    return [level + wobble, peak + wobble];
+  };
+  const points: ChartPoint[] = [];
+  for (let t = start; t < end; t += step * HOUR) {
+    const [mean, peak] = value(t);
+    points.push([t, +mean.toFixed(1), +(mean - 0.6).toFixed(1), +Math.max(mean + 0.6, peak).toFixed(1)]);
+  }
+  const next = plant.next_watering;
+  const last = points.at(-1)?.[1] ?? 0;
+  return {
+    start: new Date(start).toISOString(),
+    end: new Date(end).toISOString(),
+    step: step * 3600,
+    points,
+    thresholds: plant.thresholds,
+    forecast:
+      next?.method === "trend" && next.earliest && next.latest && new Date(next.due).getTime() > now
+        ? { due: next.due, earliest: next.earliest, latest: next.latest, level: last, rate: next.rate ?? 0, confidence: next.confidence ?? "low" }
+        : null,
+    events: [
+      ...curve.waterings.map(([ago], i) => ({
+        ts: iso(ago),
+        type: "watered",
+        source: i === curve.waterings.length - 1 && plantId === "p-monstera" ? "auto" : "card",
+      })),
+      ...(plantId === "p-monstera" ? [{ ts: iso(24 * 12), type: "fertilized", source: "card" }] : []),
+    ].filter((e) => new Date(e.ts).getTime() >= start),
+  };
+}
+
 // ---- fake connection ----------------------------------------------------------
 
 const initial = structuredClone(plants);
@@ -255,6 +324,9 @@ const connection = {
 async function callWS<T>(message: Record<string, unknown>): Promise<T> {
   await new Promise((r) => setTimeout(r, 150));
   const plant = plants.find((p) => p.id === message.plant_id);
+  if (message.type === "rootwise/plant/history") {
+    return fakeHistory(String(message.plant_id), Number(message.days ?? 14)) as T;
+  }
   if (message.type === "rootwise/care/log" && plant) {
     const ts = (message.when as string | undefined) ?? new Date().toISOString();
     const logged: JournalEntry = {
@@ -321,5 +393,13 @@ for (const [id, dark] of [
     card.setConfig({ type: "custom:rootwise-plant-card", device_id: plant, show_history: plant === "d-monstera" });
     card.hass = hass(dark);
     frame?.append(card);
+  }
+  for (const days of [14, 30]) {
+    const chart = document.createElement("rootwise-moisture-chart");
+    chart.language = "de";
+    chart.dark = dark;
+    chart.height = days === 14 ? 200 : 160;
+    chart.data = fakeHistory("p-monstera", days);
+    frame?.append(chart);
   }
 }

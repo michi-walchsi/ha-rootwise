@@ -3,6 +3,7 @@
 
 import { RootwiseOverviewCard } from "./cards/overview-card";
 import { RootwisePlantCard } from "./cards/plant-card";
+import { RootwiseMoistureChart } from "./components/moisture-chart";
 import { defineWhenReady } from "./define";
 import { localize } from "./i18n";
 import type { HomeAssistant } from "./types";
@@ -21,6 +22,7 @@ for (const type of ["overview", "plant"]) {
 }
 
 void defineWhenReady([
+  ["rootwise-moisture-chart", RootwiseMoistureChart],
   ["rootwise-overview-card", RootwiseOverviewCard],
   ["rootwise-plant-card", RootwisePlantCard],
 ]);

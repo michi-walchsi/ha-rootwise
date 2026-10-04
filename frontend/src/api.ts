@@ -1,4 +1,10 @@
-import type { HassConnection, HomeAssistant, JournalEntry, PlantsPayload } from "./types";
+import type {
+  HassConnection,
+  HistoryPayload,
+  HomeAssistant,
+  JournalEntry,
+  PlantsPayload,
+} from "./types";
 
 type Listener = (payload: PlantsPayload) => void;
 
@@ -81,4 +87,13 @@ export function canDelete(hass: HomeAssistant, entry: JournalEntry): boolean {
   if (!user) return false;
   if (user.is_admin || entry.source === "auto") return true;
   return entry.user_id !== undefined && entry.user_id === user.id;
+}
+
+/** Soil moisture of the last days, with care markers and the forecast. */
+export function fetchHistory(
+  hass: HomeAssistant,
+  plantId: string,
+  days: number,
+): Promise<HistoryPayload> {
+  return hass.callWS<HistoryPayload>({ type: "rootwise/plant/history", plant_id: plantId, days });
 }

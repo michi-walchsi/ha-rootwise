@@ -31,6 +31,17 @@ export function shortDateTime(iso: string, lang: string): string {
   }).format(new Date(iso));
 }
 
+/** "So., 27. Sept., 02:00–04:00": the shared day only once. */
+export function timeRange(start: Date, end: Date, lang: string): string {
+  return new Intl.DateTimeFormat(lang, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatRange(start, end);
+}
+
 export function formatNumber(key: MeasurementKey, value: number, lang: string): string {
   const digits = key === "temperature" ? 1 : 0;
   return new Intl.NumberFormat(lang, {

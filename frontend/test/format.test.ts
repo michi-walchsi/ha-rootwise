@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatNumber, relativeTime, scale } from "../src/format";
+import { formatNumber, relativeTime, scale, timeRange } from "../src/format";
 
 const now = new Date(2026, 8, 27, 12, 7);
 const at = (d: number, h: number, m = 0) => new Date(2026, 8, d, h, m).toISOString();
@@ -54,5 +54,17 @@ describe("scale", () => {
   it("handles open ranges", () => {
     expect(scale("air_humidity", 41, 50, null)).toEqual({ low: 50, high: 100, marker: 41 });
     expect(scale("conductivity", null, null, null).marker).toBeNull();
+  });
+});
+
+describe("timeRange", () => {
+  it("names the day once and both times", () => {
+    const start = new Date(2026, 8, 27, 2, 0);
+    const end = new Date(2026, 8, 27, 4, 0);
+    const text = timeRange(start, end, "de");
+    expect(text).toContain("27.");
+    expect(text).toContain("02:00");
+    expect(text).toContain("04:00");
+    expect(text.match(/27/g)).toHaveLength(1);
   });
 });

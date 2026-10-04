@@ -185,7 +185,10 @@ def _history(
     hub: RootwiseHub, plant: PlantRuntime, days: int, now: datetime
 ) -> dict[str, Any]:
     span = timedelta(days=days)
-    start, step = now - span, step_for(span)
+    step = step_for(span)
+    # Bins on whole hours: "02:00-04:00" reads better than "02:22-04:22".
+    seconds = step.total_seconds()
+    start = dt_util.utc_from_timestamp((now - span).timestamp() // seconds * seconds)
     sensor = plant.config.moisture_sensor
     points = resample(plant.tracker.buckets(), start, now, step) if sensor else []
     forecast = plant.tracker.forecast if sensor else None

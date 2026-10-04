@@ -33,7 +33,8 @@ async def test_history(
     client: Client,
     freezer: FrozenDateTimeFactory,
 ) -> None:
-    # Frozen: the bins line up with the hourly statistics.
+    # On a whole hour: the 2-hour bins line up with the hourly statistics.
+    freezer.move_to("2026-10-04T10:00:00+00:00")
     plant_id = subentry_id(entry, "Monstera")
     _feed_history(entry, plant_id, 72)
     watered = dt_util.utcnow() - 30 * H
@@ -48,9 +49,8 @@ async def test_history(
     result = await client.result("rootwise/plant/history", plant_id=plant_id, days=14)
 
     assert result["step"] == 2 * 3600
-    assert dt_util.parse_datetime(result["end"]) - dt_util.parse_datetime(
-        result["start"]
-    ) == timedelta(days=14)
+    assert result["start"] == "2026-09-20T10:00:00+00:00"
+    assert result["end"] == "2026-10-04T10:00:00+00:00"
     # 72 hours of statistics in 2-hour bins; the live reading (38) holds after them.
     assert 36 <= len(result["points"]) <= 38
     ts, mean, low, high = result["points"][0]
@@ -61,6 +61,20 @@ async def test_history(
     assert result["events"][0]["source"] == "card"
     assert result["thresholds"]["low"] < result["thresholds"]["high"]
     assert "forecast" in result
+
+
+async def test_history_bins_start_on_whole_hours(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    client: Client,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    freezer.move_to("2026-10-04T10:37:12+00:00")
+    plant_id = subentry_id(entry, "Monstera")
+    result = await client.result("rootwise/plant/history", plant_id=plant_id, days=30)
+    assert result["step"] == 4 * 3600
+    assert result["start"] == "2026-09-04T08:00:00+00:00"
+    assert result["end"] == "2026-10-04T10:37:12+00:00"
 
 
 async def test_history_without_soil_sensor(

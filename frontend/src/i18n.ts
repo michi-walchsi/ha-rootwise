@@ -115,6 +115,11 @@ const en: Strings = {
   "toast.thresholds": "Learned thresholds in use",
   "editor.title": "Title",
   "editor.show_history": "Show history",
+  "chart.empty": "No readings yet",
+  "chart.no_sensor": "No soil sensor",
+  "chart.point": "{value} % ({min}–{max})",
+  "chart.summary": "Soil moisture over the last {days} days: now {value} %, target {low}–{high} %, watered {count} times",
+  "chart.summary_plain": "Soil moisture over the last {days} days: now {value} %",
 };
 
 const de: Strings = {
@@ -231,6 +236,11 @@ const de: Strings = {
   "toast.thresholds": "Gelernte Schwellen übernommen",
   "editor.title": "Titel",
   "editor.show_history": "Verlauf zeigen",
+  "chart.empty": "Noch keine Messwerte",
+  "chart.no_sensor": "Kein Bodensensor",
+  "chart.point": "{value} % ({min}–{max})",
+  "chart.summary": "Bodenfeuchte der letzten {days} Tage: jetzt {value} %, Ziel {low}–{high} %, {count}× gegossen",
+  "chart.summary_plain": "Bodenfeuchte der letzten {days} Tage: jetzt {value} %",
 };
 
 const LANGUAGES: Record<string, Strings> = { en, de };
