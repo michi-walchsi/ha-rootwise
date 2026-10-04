@@ -7,12 +7,16 @@ the entry.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.websocket_api import async_register_command
 from homeassistant.components.websocket_api.connection import ActiveConnection
-from homeassistant.components.websocket_api.decorators import websocket_command
+from homeassistant.components.websocket_api.decorators import (
+    require_admin,
+    websocket_command,
+)
 from homeassistant.components.websocket_api.messages import event_message
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import (
@@ -36,7 +40,7 @@ from .const import (
 from .engine.amount import watering_amount
 from .engine.chart import resample, step_for
 from .engine.measure import round_value
-from .hub import FutureTimeError, species_range
+from .hub import CalibrationError, FutureTimeError, species_range
 from .permissions import may_log, plant_entity_ids
 
 if TYPE_CHECKING:
@@ -62,6 +66,11 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ws_history,
         ws_photos,
         ws_set_cover,
+        ws_calibration_get,
+        ws_calibration_dry,
+        ws_calibration_wet,
+        ws_calibration_apply,
+        ws_calibration_clear,
     ):
         async_register_command(hass, command)
 
@@ -148,6 +157,7 @@ def _pot(plant: PlantRuntime) -> dict[str, Any]:
 
 def _measurements(plant: PlantRuntime) -> dict[str, dict[str, Any]]:
     result = {}
+    calibration = plant.calibration
     for key, reading in plant.measurements.items():
         target = reading.target
         result[key] = {
@@ -162,6 +172,8 @@ def _measurements(plant: PlantRuntime) -> dict[str, dict[str, Any]]:
             "range_source": reading.range_source,
             "source": reading.source,
         }
+        if key == "soil_moisture" and reading.value is not None and calibration:
+            result[key]["calibrated"] = round(calibration.percent(reading.value))
     return result
 
 
@@ -189,6 +201,7 @@ def _plant(
         "species": _species(hass, plant),
         "pot": _pot(plant),
         "photo": _cover(plant),
+        "calibration": plant.calibration_info(),
         "measurements": _measurements(plant),
         "next_watering": _next_watering(plant),
         "thresholds": _thresholds(plant),
@@ -246,6 +259,9 @@ def _history(
             for p in points
         ],
         "thresholds": _thresholds(plant),
+        "calibration": {"dry": calibration.dry, "wet": calibration.wet}
+        if (calibration := plant.calibration)
+        else None,
         "forecast": {
             "due": forecast.due.isoformat(),
             "earliest": forecast.earliest.isoformat(),
@@ -503,3 +519,94 @@ def ws_set_cover(
         return
     plant.async_set_cover(photo_id)
     connection.send_result(msg["id"])
+
+
+def _calibration_command(
+    hass: HomeAssistant,
+    connection: ActiveConnection,
+    msg: dict[str, Any],
+    step: Callable[[PlantRuntime], None] | None = None,
+) -> None:
+    """Run one calibration step and answer with the assistant's state."""
+    if (found := _plant_or_error(hass, connection, msg)) is None:
+        return
+    _, plant = found
+    try:
+        if step is not None:
+            step(plant)
+        state = plant.calibration_state(dt_util.utcnow())
+    except CalibrationError as err:
+        connection.send_error(msg["id"], err.code, str(err))
+        return
+    connection.send_result(msg["id"], state)
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/calibration/get", vol.Required("plant_id"): str}
+)
+@require_admin
+@callback
+def ws_calibration_get(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Return the calibration, a step in progress and the data's suggestion."""
+    _calibration_command(hass, connection, msg)
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/calibration/dry", vol.Required("plant_id"): str}
+)
+@require_admin
+@callback
+def ws_calibration_dry(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Take the current reading as "really dry"."""
+    _calibration_command(hass, connection, msg, lambda p: p.async_calibrate_dry())
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/calibration/wet", vol.Required("plant_id"): str}
+)
+@require_admin
+@callback
+def ws_calibration_wet(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Log a thorough watering and measure field capacity after it."""
+    user_id = connection.user.id
+    _calibration_command(
+        hass, connection, msg, lambda p: p.async_calibrate_wet(user_id)
+    )
+
+
+@websocket_command(
+    {
+        vol.Required("type"): "rootwise/calibration/apply",
+        vol.Required("plant_id"): str,
+        vol.Required("dry"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+        vol.Required("wet"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+    }
+)
+@require_admin
+@callback
+def ws_calibration_apply(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Set both points (the suggestion from the data, or own values)."""
+    dry, wet = msg["dry"], msg["wet"]
+    _calibration_command(
+        hass, connection, msg, lambda p: p.async_apply_calibration(dry, wet)
+    )
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/calibration/clear", vol.Required("plant_id"): str}
+)
+@require_admin
+@callback
+def ws_calibration_clear(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Forget the calibration and any step in progress."""
+    _calibration_command(hass, connection, msg, lambda p: p.async_clear_calibration())

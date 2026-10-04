@@ -29,6 +29,8 @@ from homeassistant.util import dt as dt_util, ulid as ulid_util
 from .const import (
     BATTERY_LOW,
     CARE_PHOTO,
+    CARE_REPOTTED,
+    CARE_SENSOR_MOVED,
     CARE_WATERED,
     DEFAULT_INTERVAL,
     DEFAULT_SNOOZE,
@@ -41,6 +43,14 @@ from .const import (
     SOURCE_AUTO,
     SUBENTRY_PLANT,
     VERY_DRY_MARGIN,
+)
+from .engine.calibration import (
+    STYLE_SCALE,
+    Calibration,
+    field_capacity,
+    make,
+    style_thresholds,
+    suggest,
 )
 from .engine.detect import Watering
 from .engine.interval import seasonal_interval
@@ -69,6 +79,10 @@ _LOGGER = logging.getLogger(__name__)
 
 THRESHOLD_LOW = "low"
 THRESHOLD_HIGH = "high"
+# A watering for calibration must lift the probe at least this much.
+CALIBRATION_MIN_RISE = 3.0
+# After these the probe sits differently: the scale may no longer fit.
+PROBE_CHANGES = (CARE_SENSOR_MOVED, CARE_REPOTTED)
 
 
 def _parse(value: str | None) -> datetime | None:
@@ -120,6 +134,15 @@ class FutureTimeError(ValueError):
     """A care entry was logged for a time in the future."""
 
 
+class CalibrationError(ValueError):
+    """A calibration step that can't be done (code: no_sensor, no_value, ...)."""
+
+    def __init__(self, code: str) -> None:
+        """Keep the code for the WebSocket error."""
+        super().__init__(code)
+        self.code = code
+
+
 class PlantRuntime:
     """Live state of one plant."""
 
@@ -158,19 +181,27 @@ class PlantRuntime:
     def _settings(self) -> dict[str, Any]:
         return self.settings
 
+    @property
+    def watering_style(self) -> str:
+        """Return the species' watering style ("" if unknown)."""
+        return self.species.watering_style if self.species else ""
+
     def thresholds(self) -> tuple[float, float]:
-        """Return (low, high): own setting, else learned, else species default."""
-        style = self.species.watering_style if self.species else ""
-        low, high = default_thresholds(style)
-        if self.tracker.learned is not None:
+        """Return (low, high): own, else calibrated style, learned, species."""
+        low, high = default_thresholds(self.watering_style)
+        if (calibration := self.calibration) is not None:
+            low, high = style_thresholds(calibration, self.watering_style)
+        elif self.tracker.learned is not None:
             low, high = self.tracker.learned
         own = self._settings.get("thresholds", {})
         return float(own.get(THRESHOLD_LOW, low)), float(own.get(THRESHOLD_HIGH, high))
 
     def threshold_source(self) -> str:
-        """Return where the thresholds come from: custom, learned or species."""
+        """Return where the thresholds come from."""
         if self._settings.get("thresholds"):
             return "custom"
+        if self.calibration is not None:
+            return "calibrated"
         return "learned" if self.tracker.learned is not None else "species"
 
     def interval_days(self) -> float:
@@ -501,6 +532,176 @@ class PlantRuntime:
             self._forget_photo(entry.get("data", {}).get("photo_id"))
         self.tracker.update_forecast(dt_util.utcnow())
         self.async_evaluate()
+
+    # ---- calibration ------------------------------------------------------
+
+    @property
+    def calibration(self) -> Calibration | None:
+        """Return the calibration of the current soil probe, if any."""
+        stored = self._settings.get("calibration")
+        if not stored or stored.get("sensor") != self.config.moisture_sensor:
+            return None
+        return make(float(stored["dry"]), float(stored["wet"]))
+
+    def calibration_info(self) -> dict[str, Any] | None:
+        """Return the calibration for the cards, with whether the probe moved since."""
+        if self.calibration is None:
+            return None
+        stored = self._settings["calibration"]
+        since = _parse(stored.get("at"))
+        moved = any(
+            (ts := _parse(entry["ts"])) is not None and since is not None and ts > since
+            for kind in PROBE_CHANGES
+            for entry in self.hub.storage.typed_entries(self.config.plant_id, kind)
+        )
+        return {
+            "dry": stored["dry"],
+            "wet": stored["wet"],
+            "at": stored.get("at"),
+            "outdated": moved,
+        }
+
+    def _current_raw(self) -> float | None:
+        reading = self._reading()
+        return reading.value if reading is not None else None
+
+    def _require_probe(self) -> None:
+        if not self.config.moisture_sensor:
+            raise CalibrationError("no_sensor")
+
+    @property
+    def _pending(self) -> dict[str, Any]:
+        pending: dict[str, Any] = self._settings.setdefault("calibration_pending", {})
+        return pending
+
+    def calibration_state(self, now: datetime) -> dict[str, Any]:
+        """Return everything the calibration assistant shows."""
+        self._require_probe()
+        self.async_check_calibration(now)
+        found = suggest(self.tracker.waterings)
+        return {
+            "calibration": self.calibration_info(),
+            "pending": self._pending_state(now),
+            "suggestion": {
+                "dry": round(found.dry, 1),
+                "wet": round(found.wet, 1),
+                "waterings": len(self.tracker.waterings),
+            }
+            if found
+            else None,
+            "current": self._current_raw(),
+            "style": self.watering_style or None,
+            "scale": list(
+                STYLE_SCALE.get(self.watering_style, STYLE_SCALE["slightly_dry"])
+            ),
+        }
+
+    def _pending_state(self, now: datetime) -> dict[str, Any] | None:
+        pending = self._settings.get("calibration_pending")
+        if not pending:
+            return None
+        state: dict[str, Any] = {
+            "dry": pending.get("dry"),
+            "wet": pending.get("wet"),
+            "watered_at": pending.get("watered_at"),
+            "value": None,
+            "hours": 0.0,
+        }
+        if error := pending.get("error"):
+            state["phase"] = error
+        elif watered := _parse(pending.get("watered_at")):
+            measured = field_capacity(self.tracker.buckets(), watered, now)
+            state["phase"] = measured.phase
+            state["value"] = round(measured.value, 1) if measured.value else None
+            state["hours"] = round(measured.hours, 1)
+        elif pending.get("wet") is not None:
+            state["phase"] = "need_dry"
+        else:
+            state["phase"] = "need_wet"
+        return state
+
+    @callback
+    def async_calibrate_dry(self) -> None:
+        """Take the current reading as "really dry"."""
+        self._require_probe()
+        if (value := self._current_raw()) is None:
+            raise CalibrationError("no_value")
+        pending = self._pending
+        pending.pop("error", None)
+        pending["dry"] = round(value, 1)
+        self._finish_calibration()
+
+    @callback
+    def async_calibrate_wet(self, user_id: str | None) -> None:
+        """Log a thorough watering now and measure field capacity after it."""
+        self._require_probe()
+        before = self._current_raw()
+        self.async_log_care(CARE_WATERED, source="card", user_id=user_id)
+        pending = self._pending
+        for key in ("error", "wet"):
+            pending.pop(key, None)
+        pending["watered_at"] = dt_util.utcnow().isoformat()
+        pending["before"] = before
+        self.hub.storage.async_save_data()
+
+    @callback
+    def async_apply_calibration(self, dry: float, wet: float) -> None:
+        """Set both points at once (for example the suggestion from the data)."""
+        self._require_probe()
+        if make(dry, wet) is None:
+            raise CalibrationError("too_close")
+        self._settings["calibration"] = {
+            "dry": dry,
+            "wet": wet,
+            "at": dt_util.utcnow().isoformat(),
+            "sensor": self.config.moisture_sensor,
+        }
+        self._settings.pop("calibration_pending", None)
+        self.hub.storage.async_save_data()
+        self.tracker.update_forecast(dt_util.utcnow())
+        self.async_evaluate()
+
+    @callback
+    def async_clear_calibration(self) -> None:
+        """Forget the calibration and any step in progress."""
+        self._settings.pop("calibration", None)
+        self._settings.pop("calibration_pending", None)
+        self.hub.storage.async_save_data()
+        self.tracker.update_forecast(dt_util.utcnow())
+        self.async_evaluate()
+
+    @callback
+    def async_check_calibration(self, now: datetime) -> None:
+        """Finish the field capacity measurement once six hours have passed."""
+        pending = self._settings.get("calibration_pending")
+        if not pending or not (watered := _parse(pending.get("watered_at"))):
+            return
+        measured = field_capacity(self.tracker.buckets(), watered, now)
+        if measured.phase != "done":
+            return
+        pending.pop("watered_at")
+        before = pending.pop("before", None)
+        if measured.value is None or (
+            before is not None and measured.value - before < CALIBRATION_MIN_RISE
+        ):
+            pending["error"] = "no_rise"
+            self.hub.storage.async_save_data()
+            return
+        pending["wet"] = round(measured.value, 1)
+        self._finish_calibration()
+
+    @callback
+    def _finish_calibration(self) -> None:
+        pending = self._pending
+        dry, wet = pending.get("dry"), pending.get("wet")
+        if dry is None or wet is None:
+            self.hub.storage.async_save_data()
+            return
+        if make(dry, wet) is None:
+            pending["error"] = "too_close"
+            self.hub.storage.async_save_data()
+            return
+        self.async_apply_calibration(dry, wet)
 
     # ---- photos -----------------------------------------------------------
 

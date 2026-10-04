@@ -79,6 +79,7 @@ CARE_TYPES: Final = [
     "note",
 ]
 CARE_SENSOR_MOVED: Final = "sensor_moved"
+CARE_REPOTTED: Final = "repotted"
 # A photo is a journal entry too, but not logged like care (it needs a file).
 CARE_PHOTO: Final = "photo"
 # Journal source of waterings Rootwise found in the sensor data itself.

@@ -116,6 +116,8 @@ class WateringTracker:
         for entry, watering in self._sync_journal():
             if now - watering.at <= FRESH:
                 self.runtime.hub.async_watering_detected(self.runtime, entry, watering)
+        # Before the forecast: a finished calibration changes the thresholds.
+        self.runtime.async_check_calibration(now)
         self.update_forecast(now)
         self.runtime.async_evaluate()
 
