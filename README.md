@@ -83,7 +83,7 @@ Das Foto wird schon im Browser auf höchstens 1600 Pixel verkleinert, und Home A
 
 Die Fotos liegen unter `/media/rootwise/<Pflanze>/` und erscheinen auch unter *Medien → Meine Medien*. Rootwise liefert sie nur an angemeldete Benutzer aus. Im Fotoverlauf siehst du jedes Foto im Vollbild, wählst das **Titelbild** (sonst gilt das neueste) und löschst einzelne Fotos. Wird eine Pflanze gelöscht, verschiebt Rootwise ihre Fotos nach `/media/rootwise/_archive/`. Sichere `/media` in deinen Backups mit, wenn dir die Fotos wichtig sind.
 
-**Live-Kamera und HTTPS:** Browser geben die Kamera nur über HTTPS frei. Nutzt die Companion-App zu Hause eine Adresse wie `http://homeassistant.local:8123`, geht dort nur die Galerie. Für die Live-Kamera trägst du in der App bei deinem Server als interne Adresse eine HTTPS-Adresse ein. Mit Tailscale ist das zum Beispiel `https://<dein-host>.ts.net` über Tailscale Serve, ohne Funnel; Tailscale muss dann auch am Handy laufen.
+**Live-Kamera und HTTPS:** Browser geben die Kamera nur über HTTPS frei. Nutzt die Companion-App zu Hause eine Adresse wie `http://homeassistant.local:8123`, geht dort nur die Galerie. Für die Live-Kamera trägst du in der App bei deinem Server als interne Adresse eine HTTPS-Adresse ein. Mit Tailscale ist das zum Beispiel `https://<dein-host>.ts.net` über Tailscale Serve, ohne Funnel; Tailscale muss dann auch am Handy laufen. Unterwegs, über eine HTTPS-Adresse, geht die Live-Kamera ohnehin. Wer zu Hause unabhängig vom Internet bleiben will, lässt die interne Adresse auf http und nimmt dort die Galerie.
 
 ### Karten
 
