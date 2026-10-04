@@ -87,4 +87,5 @@ export const ICONS: Record<string, string> = {
   pruned: "mdi:content-cut",
   sensor_moved: "mdi:cursor-move",
   note: "mdi:note-text-outline",
+  photo: "mdi:camera",
 };

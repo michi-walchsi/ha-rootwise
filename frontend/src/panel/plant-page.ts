@@ -77,6 +77,11 @@ export class RootwisePlantPage extends RootwiseCardBase {
         })}
       ></rootwise-plant-card>
       ${plant.thresholds || plant.measurements.soil_moisture ? this.renderChart() : nothing}
+      <rootwise-photo-gallery
+        .hass=${this.hass}
+        .plant=${plant}
+        ?dark=${Boolean(this.hass?.themes?.darkMode)}
+      ></rootwise-photo-gallery>
       ${this.renderPot(plant)} ${this.renderSpecies(plant)}
     `;
   }
@@ -86,6 +91,29 @@ export class RootwisePlantPage extends RootwiseCardBase {
       (name, i, all): name is string => Boolean(name) && all.indexOf(name) === i,
     );
     const place = [plant.area, plant.pot.window !== "none" ? this.t(`window.${plant.pot.window}`) : null];
+    if (plant.photo) {
+      const taken = new Intl.DateTimeFormat(language(this.hass), { day: "numeric", month: "numeric" }).format(
+        new Date(plant.photo.ts),
+      );
+      return html`
+        <section class="hero big">
+          <rootwise-auth-image
+            class="cover"
+            .hass=${this.hass}
+            plantId=${plant.id}
+            photoId=${plant.photo.id}
+            size="full"
+            alt=${plant.name}
+          ></rootwise-auth-image>
+          <div class="hero-text">
+            <h2>${plant.name}</h2>
+            <div class="muted">${place.filter(Boolean).join(" · ")}</div>
+            ${species.length ? html`<div class="muted italic">${species.join(" · ")}</div>` : nothing}
+            <div class="muted small">${this.t("photo.cover_caption", { date: taken })}</div>
+          </div>
+        </section>
+      `;
+    }
     return html`
       <section class="hero">
         <div class="photo">
@@ -220,6 +248,17 @@ export class RootwisePlantPage extends RootwiseCardBase {
         display: flex;
         gap: 14px;
         align-items: center;
+      }
+      .hero.big {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .cover {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        max-height: 320px;
+        border-radius: var(--rw-radius);
       }
       .photo {
         position: relative;

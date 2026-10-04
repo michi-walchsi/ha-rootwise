@@ -31,6 +31,7 @@ export function plant(overrides: Partial<Plant> = {}): Plant {
       ranges: { temperature: { min: 18, max: 27 }, air_humidity: { min: 50, max: null } },
       dli: { min: 6, max: 12 },
     },
+    photo: null,
     pot: {
       diameter: 24,
       material: "plastic",

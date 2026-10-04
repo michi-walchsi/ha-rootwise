@@ -35,18 +35,15 @@ export class RootwiseMoistureChart extends LitElement {
       if (width !== this.width) this.width = width;
     });
     this.observer.observe(this);
+    // A hidden page (background tab, app in the background) gets no resize
+    // notifications until it is shown; measure now so the first render has a width.
+    this.width ||= Math.round(this.getBoundingClientRect().width);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.observer?.disconnect();
     this.observer = undefined;
-  }
-
-  protected override firstUpdated(): void {
-    // A hidden page (background tab, app in the background) gets no resize
-    // notifications until it is shown; measure once so the chart is there.
-    this.width ||= Math.round(this.getBoundingClientRect().width);
   }
 
   protected override willUpdate(changed: PropertyValues<this>): void {

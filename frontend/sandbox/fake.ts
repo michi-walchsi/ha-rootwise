@@ -5,6 +5,8 @@
 import * as mdi from "@mdi/js";
 import type {
   ChartPoint,
+  PhotoEntry,
+  PhotoInfo,
   HistoryPayload,
   HomeAssistant,
   JournalEntry,
@@ -56,7 +58,7 @@ customElements.define("ha-icon", HaIcon);
 const now = Date.now();
 const iso = (hoursAgo: number) => new Date(now - hoursAgo * 3_600_000).toISOString();
 
-type BasePlant = Omit<Plant, "next_watering" | "thresholds" | "pot" | "species"> & {
+type BasePlant = Omit<Plant, "next_watering" | "thresholds" | "pot" | "species" | "photo"> & {
   species: Pick<Species, "scientific" | "common" | "image_url" | "source">;
 };
 
@@ -251,6 +253,7 @@ const plants: Plant[] = base.map((p) => {
     ...p,
     species: { ...p.species, ...extra.species },
     pot: extra.pot,
+    photo: null,
     ...(extras[p.id] ?? { next_watering: null, thresholds: null }),
   };
 });
@@ -346,6 +349,119 @@ export function fakeHistory(plantId: string, days: number): HistoryPayload {
   };
 }
 
+// ---- photos --------------------------------------------------------------------
+
+interface FakePhoto {
+  entry: PhotoEntry;
+  blob: Blob;
+}
+
+const photos = new Map<string, FakePhoto[]>(); // newest first
+const covers = new Map<string, string>();
+
+function coverOf(plantId: string): PhotoInfo | null {
+  const list = photos.get(plantId) ?? [];
+  const photo = list.find((p) => p.entry.photo_id === covers.get(plantId)) ?? list[0];
+  if (!photo) return null;
+  const { photo_id: id, ts, width, height } = photo.entry;
+  return { id, ts, width, height };
+}
+
+/** A made-up plant photo: leaves in a pot, drawn on a canvas. */
+function samplePhoto(seed: number): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 900;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Promise.reject(new Error("canvas"));
+  const sky = ctx.createLinearGradient(0, 0, 0, 900);
+  sky.addColorStop(0, seed % 2 ? "#e9e4d8" : "#dfe8e2");
+  sky.addColorStop(1, "#b9b2a3");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 1200, 900);
+  for (let i = 0; i < 9 + seed * 3; i++) {
+    const angle = -Math.PI / 2 + (i - 5) * 0.32;
+    const x = 600 + Math.cos(angle) * (180 + (i % 3) * 60);
+    const y = 520 + Math.sin(angle) * (230 + (i % 2) * 50);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.fillStyle = `hsl(${128 + (i % 4) * 6}, 45%, ${24 + (i % 3) * 6}%)`;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 70, 120, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = "#a35a3a";
+  ctx.beginPath();
+  ctx.moveTo(470, 640);
+  ctx.lineTo(730, 640);
+  ctx.lineTo(700, 880);
+  ctx.lineTo(500, 880);
+  ctx.closePath();
+  ctx.fill();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("jpeg"))), "image/jpeg", 0.85),
+  );
+}
+
+async function addPhoto(plantId: string, blob: Blob, note: string | null, hoursAgo = 0): Promise<JournalEntry> {
+  const bitmap = await createImageBitmap(blob);
+  const id = `PH${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const ts = iso(hoursAgo);
+  const entry: PhotoEntry = {
+    entry_id: crypto.randomUUID(),
+    photo_id: id,
+    ts,
+    width: bitmap.width,
+    height: bitmap.height,
+    note,
+    user_id: "u1",
+  };
+  bitmap.close();
+  photos.set(plantId, [{ entry, blob }, ...(photos.get(plantId) ?? [])]);
+  const journal: JournalEntry = {
+    id: entry.entry_id,
+    plant_id: plantId,
+    ts,
+    type: "photo",
+    source: "card",
+    user_id: "u1",
+    ...(note ? { note } : {}),
+  };
+  const plant = plants.find((p) => p.id === plantId);
+  if (plant) {
+    plant.photo = coverOf(plantId);
+    plant.recent = [journal, ...plant.recent].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 5);
+  }
+  push();
+  return journal;
+}
+
+async function fetchWithAuth(path: string, init?: RequestInit): Promise<Response> {
+  await new Promise((r) => setTimeout(r, 120));
+  const upload = /^\/api\/rootwise\/photos\/([^/]+)$/.exec(path);
+  if (upload?.[1] && init?.method === "POST") {
+    const form = init.body as FormData;
+    const file = form.get("file");
+    if (!(file instanceof Blob)) return new Response(JSON.stringify({ message: "No photo" }), { status: 400 });
+    const note = form.get("note");
+    const entry = await addPhoto(decodeURIComponent(upload[1]), file, typeof note === "string" ? note : null);
+    return new Response(JSON.stringify({ entry }));
+  }
+  const get = /^\/api\/rootwise\/photos\/([^/]+)\/([^/?]+)/.exec(path);
+  const photo = get?.[1] && get[2]
+    ? photos.get(decodeURIComponent(get[1]))?.find((p) => p.entry.photo_id === decodeURIComponent(get[2] ?? ""))
+    : undefined;
+  if (photo) return new Response(photo.blob, { headers: { "Content-Type": "image/jpeg" } });
+  return new Response(JSON.stringify({ message: "Unknown photo" }), { status: 404 });
+}
+
+void (async () => {
+  await addPhoto("p-monstera", await samplePhoto(0), "Erstes neues Blatt", 24 * 21);
+  await addPhoto("p-monstera", await samplePhoto(1), null, 24 * 3);
+})();
+
 // ---- fake connection ----------------------------------------------------------
 
 const initial = structuredClone(plants);
@@ -398,8 +514,29 @@ async function callWS<T>(message: Record<string, unknown>): Promise<T> {
     push();
     return { entry: logged } as T;
   }
+  if (message.type === "rootwise/photos/list") {
+    const id = String(message.plant_id);
+    return {
+      photos: (photos.get(id) ?? []).map((p) => p.entry),
+      cover: coverOf(id)?.id ?? null,
+    } as T;
+  }
+  if (message.type === "rootwise/photos/cover" && plant) {
+    if (message.photo_id) covers.set(plant.id, String(message.photo_id));
+    else covers.delete(plant.id);
+    plant.photo = coverOf(plant.id);
+    push();
+    return {} as T;
+  }
   if (message.type === "rootwise/care/delete") {
+    for (const [plantId, list] of photos) {
+      photos.set(plantId, list.filter((p) => p.entry.entry_id !== message.entry_id));
+      if (covers.get(plantId) && !photos.get(plantId)?.some((p) => p.entry.photo_id === covers.get(plantId))) {
+        covers.delete(plantId);
+      }
+    }
     for (const p of plants) {
+      p.photo = coverOf(p.id);
       p.recent = p.recent.filter((e) => e.id !== message.entry_id);
       // Like the real backend re-evaluating: back to the state before watering.
       const before = initial.find((i) => i.id === p.id);
@@ -419,6 +556,8 @@ export function hass(dark: boolean): HomeAssistant {
   return {
     connection,
     callWS,
+    fetchWithAuth,
+    config: { external_url: "https://home.example.ts.net", internal_url: "http://192.168.1.5:8123" },
     language: "de",
     user: { id: "u1", is_admin: true },
     themes: { darkMode: dark },

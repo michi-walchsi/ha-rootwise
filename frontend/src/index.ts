@@ -4,7 +4,10 @@
 
 import { RootwiseOverviewCard } from "./cards/overview-card";
 import { RootwisePlantCard } from "./cards/plant-card";
+import { RootwiseAuthImage } from "./components/auth-image";
 import { RootwiseMoistureChart } from "./components/moisture-chart";
+import { RootwisePhotoCapture } from "./components/photo-capture";
+import { RootwisePhotoGallery } from "./components/photo-gallery";
 import { defineWhenReady } from "./define";
 import { RootwisePlantPage } from "./panel/plant-page";
 import { RootwisePanel } from "./panel/rootwise-panel";
@@ -25,7 +28,10 @@ for (const type of ["overview", "plant"]) {
 }
 
 void defineWhenReady([
+  ["rootwise-auth-image", RootwiseAuthImage],
   ["rootwise-moisture-chart", RootwiseMoistureChart],
+  ["rootwise-photo-capture", RootwisePhotoCapture],
+  ["rootwise-photo-gallery", RootwisePhotoGallery],
   ["rootwise-overview-card", RootwiseOverviewCard],
   ["rootwise-plant-card", RootwisePlantCard],
   ["rootwise-plant-page", RootwisePlantPage],

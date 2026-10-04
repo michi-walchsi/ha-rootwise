@@ -98,6 +98,24 @@ export interface Pot {
   amount: [number, number] | null;
 }
 
+export interface PhotoInfo {
+  id: string;
+  ts: string;
+  width: number;
+  height: number;
+}
+
+/** rootwise/photos/list: one photo with its journal entry. */
+export interface PhotoEntry {
+  entry_id: string;
+  photo_id: string;
+  ts: string;
+  width: number;
+  height: number;
+  note: string | null;
+  user_id: string | null;
+}
+
 export interface Plant {
   id: string;
   name: string;
@@ -113,6 +131,8 @@ export interface Plant {
   last_watered: string | null;
   species: Species;
   pot: Pot;
+  /** The cover photo: the chosen one, else the newest. */
+  photo: PhotoInfo | null;
   measurements: Partial<Record<MeasurementKey, Measurement>>;
   next_watering: NextWatering | null;
   thresholds: Thresholds | null;
@@ -167,6 +187,9 @@ export interface HassConnection {
 export interface HomeAssistant {
   connection: HassConnection;
   callWS<T>(message: Record<string, unknown>): Promise<T>;
+  /** fetch with the user's token: photos are only served to logged-in users. */
+  fetchWithAuth(path: string, init?: RequestInit): Promise<Response>;
+  config?: { external_url?: string | null; internal_url?: string | null };
   language: string;
   locale?: { language: string };
   user?: { id: string; is_admin: boolean; name?: string };
