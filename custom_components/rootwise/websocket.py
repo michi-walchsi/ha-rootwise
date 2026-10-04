@@ -9,16 +9,20 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.websocket_api import async_register_command
 from homeassistant.components.websocket_api.connection import ActiveConnection
 from homeassistant.components.websocket_api.decorators import (
+    async_response,
     require_admin,
     websocket_command,
 )
 from homeassistant.components.websocket_api.messages import event_message
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import (
     area_registry as ar,
     config_validation as cv,
@@ -33,15 +37,33 @@ from .const import (
     CARE_SENSOR_MOVED,
     CARE_TYPES,
     CARE_WATERED,
+    CONF_DRAINAGE,
+    CONF_LOCATION,
+    CONF_MOISTURE_SENSOR,
+    CONF_POT_DIAMETER,
+    CONF_POT_MATERIAL,
+    CONF_WINDOW,
     DOMAIN,
+    LOCATIONS,
+    POT_MATERIALS,
+    SENSOR_KEYS,
     SIGNAL_UPDATE,
     SOURCE_AUTO,
+    SUBENTRY_PLANT,
+    WINDOWS,
 )
 from .engine.amount import watering_amount
 from .engine.chart import resample, step_for
 from .engine.measure import round_value
 from .hub import CalibrationError, FutureTimeError, species_range
 from .permissions import may_log, plant_entity_ids
+from .plant_data import (
+    PlantDataError,
+    async_build_plant,
+    async_search_species,
+    async_species_choice,
+    suggestions,
+)
 
 if TYPE_CHECKING:
     from .hub import PlantRuntime, RootwiseHub
@@ -71,6 +93,10 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ws_calibration_wet,
         ws_calibration_apply,
         ws_calibration_clear,
+        ws_create_plant,
+        ws_species_search,
+        ws_species_info,
+        ws_sensor_suggestions,
     ):
         async_register_command(hass, command)
 
@@ -610,3 +636,121 @@ def ws_calibration_clear(
 ) -> None:
     """Forget the calibration and any step in progress."""
     _calibration_command(hass, connection, msg, lambda p: p.async_clear_calibration())
+
+
+SENSOR_FIELDS = {
+    vol.Optional(key): vol.Any(None, cv.entity_id)
+    for key in (CONF_MOISTURE_SENSOR, *SENSOR_KEYS)
+}
+POT_FIELDS = {
+    vol.Optional(CONF_POT_DIAMETER): vol.All(
+        vol.Coerce(float), vol.Range(min=5, max=80)
+    ),
+    vol.Optional(CONF_POT_MATERIAL): vol.In(POT_MATERIALS),
+    vol.Optional(CONF_DRAINAGE): bool,
+    vol.Optional(CONF_WINDOW): vol.In(WINDOWS),
+    vol.Optional(CONF_LOCATION): vol.In(LOCATIONS),
+}
+
+
+def _loaded_hub(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> RootwiseHub | None:
+    hub = _hub(hass)
+    if hub is None:
+        connection.send_error(msg["id"], "not_loaded", "Rootwise is not loaded")
+    return hub
+
+
+@websocket_command(
+    {
+        vol.Required("type"): "rootwise/plants/create",
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=60)),
+        vol.Optional("area_id"): vol.Any(None, str),
+        vol.Optional("species"): vol.Any(None, str),
+        vol.Optional("opb_pid"): vol.Any(None, str),
+        vol.Optional("sensors"): SENSOR_FIELDS,
+        vol.Optional("pot"): POT_FIELDS,
+    }
+)
+@require_admin
+@async_response
+async def ws_create_plant(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Add a plant from the panel's wizard; the entry reloads with it."""
+    if (hub := _loaded_hub(hass, connection, msg)) is None:
+        return
+    try:
+        title, data = await async_build_plant(hass, hub.entry, hub.species_db, msg)
+    except PlantDataError as err:
+        connection.send_error(msg["id"], err.code, str(err))
+        return
+    subentry = ConfigSubentry(
+        data=MappingProxyType(data),
+        subentry_type=SUBENTRY_PLANT,
+        title=title,
+        unique_id=data.get(CONF_MOISTURE_SENSOR),
+    )
+    try:
+        hass.config_entries.async_add_subentry(hub.entry, subentry)
+    except HomeAssistantError:
+        connection.send_error(msg["id"], "sensor_in_use", "Soil sensor in use")
+        return
+    connection.send_result(msg["id"], {"plant_id": subentry.subentry_id})
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/species/search", vol.Required("query"): str}
+)
+@require_admin
+@async_response
+async def ws_species_search(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Search species: OpenPlantbook if it is installed, and the offline list."""
+    if (hub := _loaded_hub(hass, connection, msg)) is None:
+        return
+    connection.send_result(
+        msg["id"], await async_search_species(hass, hub.species_db, msg["query"])
+    )
+
+
+@websocket_command(
+    {vol.Required("type"): "rootwise/species/info", vol.Required("pid"): str}
+)
+@require_admin
+@async_response
+async def ws_species_info(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Return one OpenPlantbook species and the matching offline one."""
+    if (hub := _loaded_hub(hass, connection, msg)) is None:
+        return
+    try:
+        info, species_id = await async_species_choice(hass, hub.species_db, msg["pid"])
+    except PlantDataError as err:
+        connection.send_error(msg["id"], err.code, str(err))
+        return
+    connection.send_result(msg["id"], {"info": info, "species": species_id})
+
+
+@websocket_command(
+    {
+        vol.Required("type"): "rootwise/sensors/suggest",
+        vol.Optional("moisture_sensor"): vol.Any(None, str),
+        vol.Optional("area_id"): vol.Any(None, str),
+    }
+)
+@require_admin
+@callback
+def ws_sensor_suggestions(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Return sensors for the wizard: suggested ones and all that fit, live."""
+    if (hub := _loaded_hub(hass, connection, msg)) is None:
+        return
+    connection.send_result(
+        msg["id"],
+        suggestions(hass, hub.entry, msg.get("moisture_sensor"), msg.get("area_id")),
+    )

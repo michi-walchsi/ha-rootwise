@@ -68,7 +68,8 @@ from .const import (
 from .hub import species_range
 from .importer import ImportedPlant, find_existing, merge, plant_monitor_plants
 from .opb import OpbError, async_search, async_species_info, opb_available
-from .sources import mirror_entities, resolve
+from .plant_data import real_sensors, sensor_in_use
+from .sources import mirror_entities
 from .species.db import SpeciesDb
 from .suggest import suggest_sensors
 
@@ -192,18 +193,6 @@ def sensors_schema(exclude: list[str]) -> vol.Schema:
             for key, device_class in SENSOR_DEVICE_CLASSES.items()
         }
     )
-
-
-def _real_sensors(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Replace mirror sensors by the real ones; drop mirrors of unknown origin."""
-    result = dict(data)
-    for key in (CONF_MOISTURE_SENSOR, *SENSOR_KEYS):
-        if entity_id := result.get(key):
-            if (real := resolve(hass, entity_id)) is None:
-                result.pop(key)
-            else:
-                result[key] = real
-    return result
 
 
 def pot_schema() -> vol.Schema:
@@ -348,7 +337,7 @@ class PlantSubentryFlow(ConfigSubentryFlow):
         """Change a plant; starts from the stored plant."""
         current = self._get_reconfigure_subentry()
         self._name = current.title
-        self._data = _real_sensors(self.hass, dict(current.data))
+        self._data = real_sensors(self.hass, dict(current.data))
         if opb_available(self.hass):
             return self.async_show_menu(
                 step_id="reconfigure", menu_options=["search", "basics"]
@@ -428,7 +417,7 @@ class PlantSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             moisture = user_input.get(CONF_MOISTURE_SENSOR)
             current = self._get_reconfigure_subentry() if self._reconfiguring else None
-            if moisture and _sensor_in_use(self._get_entry(), moisture, current):
+            if moisture and sensor_in_use(self._get_entry(), moisture, current):
                 errors["base"] = "sensor_in_use"
             else:
                 self._name = str(user_input[CONF_NAME]).strip()
@@ -579,13 +568,3 @@ class PlantSubentryFlow(ConfigSubentryFlow):
                 self._data.pop(key, None)
             else:
                 self._data[key] = value
-
-
-def _sensor_in_use(
-    entry: ConfigEntry, entity_id: str, current: ConfigSubentry | None
-) -> bool:
-    return any(
-        sub.data.get(CONF_MOISTURE_SENSOR) == entity_id
-        for sub in entry.subentries.values()
-        if current is None or sub.subentry_id != current.subentry_id
-    )
