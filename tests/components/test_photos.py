@@ -7,7 +7,9 @@ from unittest.mock import patch
 from aiohttp import FormData
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.auth.const import GROUP_ID_USER
+from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.setup import async_setup_component
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -231,3 +233,99 @@ async def test_photos_of_a_removed_plant_are_archived(
     assert not (media / plant_id).exists()
     archived = media / "_archive" / plant_id
     assert len(list(archived.glob("*.jpg"))) == 2
+
+
+async def test_cover_photo_is_an_image_entity(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    hass_client: ClientSessionGenerator,
+    client: Client,
+    media: Path,
+) -> None:
+    assert hass.states.get("image.monstera_photo").state == STATE_UNKNOWN
+    plant_id = subentry_id(entry, "Monstera")
+    http = await hass_client()
+    logged = (await (await _upload(http, plant_id, jpeg(300, 200))).json())["entry"]
+    await hass.async_block_till_done()
+
+    state = hass.states.get("image.monstera_photo")
+    assert state.state == logged["ts"]
+    picture = await http.get(state.attributes["entity_picture"])
+    assert picture.status == HTTPStatus.OK
+    stored = media / plant_id / f"{logged['data']['photo_id']}.jpg"
+    assert await picture.read() == stored.read_bytes()
+
+    await client.result("rootwise/care/delete", entry_id=logged["id"])
+    await hass.async_block_till_done()
+    assert hass.states.get("image.monstera_photo").state == STATE_UNKNOWN
+
+
+async def test_upload_photo_action_takes_a_file(
+    hass: HomeAssistant, entry: MockConfigEntry, tmp_path: Path, media: Path
+) -> None:
+    folder = tmp_path / "camera"
+    folder.mkdir()
+    picture = folder / "balkon.jpg"
+    picture.write_bytes(jpeg(640, 480, gps=True))
+    hass.config.allowlist_external_dirs = {str(folder)}
+
+    await hass.services.async_call(
+        "rootwise",
+        "upload_photo",
+        {
+            "entity_id": "sensor.monstera_status",
+            "file_path": str(picture),
+            "note": "Von der Automation",
+        },
+        blocking=True,
+    )
+
+    plant = entry.runtime_data.plants[subentry_id(entry, "Monstera")]
+    cover = plant.cover_photo
+    assert cover["source"] == "service"
+    assert cover["note"] == "Von der Automation"
+    stored = media / plant.config.plant_id / f"{cover['data']['photo_id']}.jpg"
+    assert not opened(stored.read_bytes()).getexif().get_ifd(GPS_IFD)
+
+
+async def test_upload_photo_action_takes_a_camera_snapshot(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    with patch(
+        "custom_components.rootwise.services._camera_image",
+        return_value=jpeg(320, 240),
+    ) as get_image:
+        await hass.services.async_call(
+            "rootwise",
+            "upload_photo",
+            {"entity_id": "sensor.monstera_status", "camera": "camera.balkon"},
+            blocking=True,
+        )
+    assert get_image.call_args.args[1] == "camera.balkon"
+    plant = entry.runtime_data.plants[subentry_id(entry, "Monstera")]
+    assert plant.cover_photo["data"]["width"] == 320
+
+
+async def test_upload_photo_action_refusals(
+    hass: HomeAssistant, entry: MockConfigEntry, tmp_path: Path
+) -> None:
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    hass.config.allowlist_external_dirs = {str(allowed)}
+    (tmp_path / "secret.jpg").write_bytes(jpeg(10, 10))
+    (allowed / "notes.jpg").write_bytes(b"no picture")
+    cases = {
+        "path_not_allowed": {"file_path": str(tmp_path / "secret.jpg")},
+        "photo_source_missing": {},
+        "not_a_picture": {"file_path": str(allowed / "notes.jpg")},
+        "photo_not_readable": {"file_path": str(allowed / "missing.jpg")},
+    }
+    for key, data in cases.items():
+        with pytest.raises(ServiceValidationError) as err:
+            await hass.services.async_call(
+                "rootwise",
+                "upload_photo",
+                {"entity_id": "sensor.monstera_status", **data},
+                blocking=True,
+            )
+        assert err.value.translation_key == key

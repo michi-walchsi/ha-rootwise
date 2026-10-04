@@ -526,7 +526,12 @@ class PlantRuntime:
         )
 
     async def async_add_photo(
-        self, clean: CleanImage, *, note: str | None, user_id: str | None
+        self,
+        clean: CleanImage,
+        *,
+        note: str | None,
+        user_id: str | None,
+        source: str = "card",
     ) -> dict[str, Any]:
         """Store a cleaned photo and log it."""
         photo_id = ulid_util.ulid_now()
@@ -536,7 +541,7 @@ class PlantRuntime:
         entry = self.hub.storage.async_add_entry(
             self.config.plant_id,
             CARE_PHOTO,
-            "card",
+            source,
             note=note,
             user_id=user_id,
             data={

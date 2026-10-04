@@ -150,6 +150,7 @@ PLANT_ENTITY_KEYS: Final[tuple[str, ...]] = (
     CARE_FERTILIZED,
     "snooze",
     "next_watering",
+    "photo",
 )
 HUB_ENTITY_KEYS: Final[tuple[str, ...]] = (
     "care_calendar",

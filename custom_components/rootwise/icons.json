@@ -24,6 +24,11 @@
         "default": "mdi:calendar-heart"
       }
     },
+    "image": {
+      "photo": {
+        "default": "mdi:image-outline"
+      }
+    },
     "number": {
       "dry_threshold": {
         "default": "mdi:water-minus"
@@ -99,6 +104,9 @@
     },
     "snooze": {
       "service": "mdi:clock-plus-outline"
+    },
+    "upload_photo": {
+      "service": "mdi:camera-plus-outline"
     }
   }
 }

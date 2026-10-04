@@ -156,6 +156,11 @@
         "name": "Pflanzenpflege"
       }
     },
+    "image": {
+      "photo": {
+        "name": "Foto"
+      }
+    },
     "number": {
       "dry_threshold": {
         "name": "Trocken-Schwelle"
@@ -454,8 +459,20 @@
     "no_plant_selected": {
       "message": "Keine Rootwise-Pflanze ausgewählt. Wähle ein Pflanzen-Gerät oder eine seiner Entitäten."
     },
+    "not_a_picture": {
+      "message": "Das ist kein JPEG-, PNG- oder WebP-Bild, das Rootwise nehmen kann."
+    },
     "not_loaded": {
       "message": "Rootwise ist nicht geladen."
+    },
+    "path_not_allowed": {
+      "message": "Dieser Ordner ist nicht erlaubt. Trage ihn in configuration.yaml unter allowlist_external_dirs ein."
+    },
+    "photo_not_readable": {
+      "message": "Die Datei lässt sich nicht lesen. Prüfe den Pfad."
+    },
+    "photo_source_missing": {
+      "message": "Gib eine Datei oder eine Kamera an."
     },
     "when_in_future": {
       "message": "Dieser Zeitpunkt liegt in der Zukunft. Prüfe Datum und Uhrzeit."
@@ -597,6 +614,24 @@
         }
       },
       "name": "Gießen verschieben"
+    },
+    "upload_photo": {
+      "description": "Fügt einer oder mehreren Pflanzen ein Foto hinzu, aus einer Datei oder von einer Kamera. Das Bild wird ohne Metadaten (etwa den GPS-Standort) gespeichert.",
+      "fields": {
+        "camera": {
+          "description": "Stattdessen ein Bild dieser Kamera aufnehmen.",
+          "name": "Kamera"
+        },
+        "file_path": {
+          "description": "Pfad eines JPEG-, PNG- oder WebP-Bilds auf dem Home-Assistant-Rechner. Er muss in einem erlaubten Ordner liegen (allowlist_external_dirs).",
+          "name": "Datei"
+        },
+        "note": {
+          "description": "Optionale Notiz für das Journal.",
+          "name": "Notiz"
+        }
+      },
+      "name": "Pflanzenfoto hinzufügen"
     }
   }
 }

@@ -50,3 +50,20 @@ set_vacation:
     until:
       selector:
         datetime:
+
+upload_photo:
+  target:
+    entity:
+      integration: rootwise
+  fields:
+    file_path:
+      example: /media/kamera/balkon.jpg
+      selector:
+        text:
+    camera:
+      selector:
+        entity:
+          domain: camera
+    note:
+      selector:
+        text:

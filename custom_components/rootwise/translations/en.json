@@ -156,6 +156,11 @@
         "name": "Plant care"
       }
     },
+    "image": {
+      "photo": {
+        "name": "Photo"
+      }
+    },
     "number": {
       "dry_threshold": {
         "name": "Dry threshold"
@@ -454,8 +459,20 @@
     "no_plant_selected": {
       "message": "No Rootwise plant selected. Choose a plant device or one of its entities."
     },
+    "not_a_picture": {
+      "message": "This is not a JPEG, PNG or WebP picture Rootwise can take."
+    },
     "not_loaded": {
       "message": "Rootwise is not loaded."
+    },
+    "path_not_allowed": {
+      "message": "This folder is not allowed. Add it to allowlist_external_dirs in configuration.yaml."
+    },
+    "photo_not_readable": {
+      "message": "The file can't be read. Check the path."
+    },
+    "photo_source_missing": {
+      "message": "Give a file or a camera."
     },
     "when_in_future": {
       "message": "That time is in the future. Check the date and time."
@@ -597,6 +614,24 @@
         }
       },
       "name": "Snooze watering"
+    },
+    "upload_photo": {
+      "description": "Adds a photo to one or more plants, from a file or a camera. The picture is stored without its metadata (such as the GPS position).",
+      "fields": {
+        "camera": {
+          "description": "Take a snapshot from this camera instead.",
+          "name": "Camera"
+        },
+        "file_path": {
+          "description": "Path of a JPEG, PNG or WebP picture on the Home Assistant host. It must be in an allowed folder (allowlist_external_dirs).",
+          "name": "File"
+        },
+        "note": {
+          "description": "Optional note for the journal.",
+          "name": "Note"
+        }
+      },
+      "name": "Add plant photo"
     }
   }
 }
