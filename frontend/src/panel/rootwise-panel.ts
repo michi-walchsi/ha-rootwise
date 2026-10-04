@@ -1,7 +1,7 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { RootwiseCardBase } from "../cards/base";
-import { navigate, PANEL_PATH } from "../navigate";
+import { navigate, PANEL_PATH, plantPath } from "../navigate";
 import { theme } from "../theme";
 import type { Plant } from "../types";
 import { configure } from "./configure";
@@ -11,12 +11,13 @@ interface Route {
   path: string;
 }
 
-type Page = { kind: "overview" } | { kind: "plant"; id: string };
+type Page = { kind: "overview" } | { kind: "plant" | "calibrate"; id: string };
 
-/** Route below /rootwise: "" is the overview, "/plant/<id>" a plant. */
+/** Route below /rootwise: "", "/plant/<id>" or "/plant/<id>/calibrate". */
 export function pageFor(path: string | undefined): Page {
-  const match = /^\/plant\/([^/]+)/.exec(path ?? "");
-  return match?.[1] ? { kind: "plant", id: decodeURIComponent(match[1]) } : { kind: "overview" };
+  const match = /^\/plant\/([^/]+)(\/calibrate)?/.exec(path ?? "");
+  if (!match?.[1]) return { kind: "overview" };
+  return { kind: match[2] ? "calibrate" : "plant", id: decodeURIComponent(match[1]) };
 }
 
 function areas(plants: Plant[]): { id: string; name: string }[] {
@@ -36,12 +37,18 @@ export class RootwisePanel extends RootwiseCardBase {
 
   protected override render(): TemplateResult {
     const page = pageFor(this.route?.path);
-    const plant =
-      page.kind === "plant" ? this.payload?.plants.find((p) => p.id === page.id) : undefined;
+    const plant = page.kind === "overview" ? undefined : this.payload?.plants.find((p) => p.id === page.id);
+    const back = page.kind === "calibrate" ? plantPath(page.id) : PANEL_PATH;
+    const title =
+      page.kind === "overview"
+        ? this.t("panel.title")
+        : page.kind === "calibrate"
+          ? this.t("calibration.title")
+          : (plant?.name ?? "");
     return html`
       <header class="toolbar">
-        ${page.kind === "plant"
-          ? html`<button class="icon" aria-label=${this.t("panel.back")} @click=${() => navigate(PANEL_PATH)}>
+        ${page.kind !== "overview"
+          ? html`<button class="icon" aria-label=${this.t("panel.back")} @click=${() => navigate(back)}>
               <ha-icon icon="mdi:arrow-left"></ha-icon>
             </button>`
           : this.narrow
@@ -49,8 +56,8 @@ export class RootwisePanel extends RootwiseCardBase {
                 <ha-icon icon="mdi:menu"></ha-icon>
               </button>`
             : nothing}
-        <h1 class="title">${page.kind === "plant" ? (plant?.name ?? "") : this.t("panel.title")}</h1>
-        ${plant?.device_id && this.hass?.user?.is_admin
+        <h1 class="title">${title}</h1>
+        ${page.kind === "plant" && plant?.device_id && this.hass?.user?.is_admin
           ? html`<button
               class="icon"
               aria-label=${this.t("panel.settings")}
@@ -61,7 +68,13 @@ export class RootwisePanel extends RootwiseCardBase {
             </button>`
           : nothing}
       </header>
-      <main>${page.kind === "plant" ? this.renderPlant(page.id) : this.renderOverview()}</main>
+      <main>
+        ${page.kind === "overview"
+          ? this.renderOverview()
+          : page.kind === "calibrate"
+            ? html`<rootwise-calibration-page .hass=${this.hass} .plantId=${page.id}></rootwise-calibration-page>`
+            : this.renderPlant(page.id)}
+      </main>
     `;
   }
 

@@ -21,6 +21,8 @@ export interface Measurement {
   level: MoistureLevel | null;
   range_source: string | null;
   source: string;
+  /** Soil moisture on the plant's calibrated scale, if calibrated. */
+  calibrated?: number;
 }
 
 export interface JournalEntry {
@@ -46,7 +48,7 @@ export interface NextWatering {
 export interface Thresholds {
   low: number;
   high: number;
-  source: "custom" | "learned" | "species";
+  source: "custom" | "calibrated" | "learned" | "species";
   learned: [number, number] | null;
   waterings: number;
 }
@@ -98,6 +100,45 @@ export interface Pot {
   amount: [number, number] | null;
 }
 
+/** Raw readings at 0 % (really dry) and 100 % (field capacity). */
+export interface Scale {
+  dry: number;
+  wet: number;
+}
+
+export interface CalibrationInfo extends Scale {
+  at: string | null;
+  /** The probe was moved or the plant repotted since. */
+  outdated: boolean;
+}
+
+export type CalibrationPhase =
+  | "need_wet"
+  | "need_dry"
+  | "draining"
+  | "measuring"
+  | "done"
+  | "no_rise"
+  | "too_close";
+
+/** rootwise/calibration/*: what the assistant shows. */
+export interface CalibrationState {
+  calibration: CalibrationInfo | null;
+  pending: {
+    phase: CalibrationPhase;
+    dry: number | null;
+    wet: number | null;
+    watered_at: string | null;
+    value: number | null;
+    hours: number;
+  } | null;
+  suggestion: { dry: number; wet: number; waterings: number } | null;
+  current: number | null;
+  style: WateringStyle | null;
+  /** Water below, too wet above: percent of the calibrated scale. */
+  scale: [number, number];
+}
+
 export interface PhotoInfo {
   id: string;
   ts: string;
@@ -133,6 +174,8 @@ export interface Plant {
   pot: Pot;
   /** The cover photo: the chosen one, else the newest. */
   photo: PhotoInfo | null;
+  /** Raw values for 0 % (dry) and 100 % (field capacity) of this probe. */
+  calibration: CalibrationInfo | null;
   measurements: Partial<Record<MeasurementKey, Measurement>>;
   next_watering: NextWatering | null;
   thresholds: Thresholds | null;
@@ -169,6 +212,7 @@ export interface HistoryPayload {
   thresholds: Thresholds | null;
   forecast: ForecastData | null;
   events: ChartEvent[];
+  calibration?: Scale | null;
 }
 
 export interface PlantsPayload {

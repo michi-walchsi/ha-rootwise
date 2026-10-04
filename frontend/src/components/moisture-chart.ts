@@ -1,5 +1,6 @@
 import { LitElement, css, html, nothing, svg, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
+import { calibrateHistory } from "../calibration";
 import { chartModel, nearestPoint, type ChartModel } from "../chart-model";
 import { timeRange } from "../format";
 import { localize } from "../i18n";
@@ -26,6 +27,8 @@ export class RootwiseMoistureChart extends LitElement {
   @state() private hover: number | null = null;
 
   private model?: ChartModel;
+  /** The data as drawn: on the calibrated scale if the probe is calibrated. */
+  private shown?: HistoryPayload;
   private observer?: ResizeObserver;
 
   override connectedCallback(): void {
@@ -47,13 +50,16 @@ export class RootwiseMoistureChart extends LitElement {
   }
 
   protected override willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has("data")) this.hover = null;
+    if (changed.has("data")) {
+      this.hover = null;
+      this.shown = this.data ? calibrateHistory(this.data) : undefined;
+    }
     // `width` is private, so PropertyValues<this> doesn't know it.
     const keys: PropertyKey[] = ["data", "width", "height", "compact", "language"];
     if (keys.some((key) => (changed as Map<PropertyKey, unknown>).has(key))) {
       this.model =
-        this.data && this.width
-          ? chartModel(this.data, this.width, this.height, this.language, { compact: this.compact })
+        this.shown && this.width
+          ? chartModel(this.shown, this.width, this.height, this.language, { compact: this.compact })
           : undefined;
     }
   }
@@ -63,7 +69,7 @@ export class RootwiseMoistureChart extends LitElement {
   }
 
   protected override render() {
-    const data = this.data;
+    const data = this.shown;
     const style = `height:${this.height}px`;
     if (!data) return html`<div class="frame" style=${style} aria-busy="true"></div>`;
     if (!data.points.length) {
@@ -212,10 +218,10 @@ export class RootwiseMoistureChart extends LitElement {
   }
 
   private onPointer = (event: PointerEvent): void => {
-    if (!this.data || !this.model) return;
+    if (!this.shown || !this.model) return;
     const box = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
-    const hit = nearestPoint(this.data, this.model, event.clientX - box.left);
-    this.hover = hit ? this.data.points.indexOf(hit.point) : null;
+    const hit = nearestPoint(this.shown, this.model, event.clientX - box.left);
+    this.hover = hit ? this.shown.points.indexOf(hit.point) : null;
   };
 
   private onLeave = (): void => {
@@ -223,7 +229,7 @@ export class RootwiseMoistureChart extends LitElement {
   };
 
   private onKey = (event: KeyboardEvent): void => {
-    const count = this.data?.points.length ?? 0;
+    const count = this.shown?.points.length ?? 0;
     if (!count) return;
     const current = this.hover ?? count;
     const next = new Map<string, number>([

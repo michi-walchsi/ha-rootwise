@@ -55,8 +55,10 @@ function valueDomain(data: HistoryPayload): [number, number] {
   if (data.thresholds) values.push(data.thresholds.low, data.thresholds.high);
   if (data.forecast) values.push(data.forecast.level);
   if (!values.length) return [0, 100];
+  // A calibrated probe reads up to 110 % right after watering.
+  const ceiling = Math.max(...values) > 100 ? 110 : 100;
   let v0 = Math.max(0, Math.floor((Math.min(...values) - 5) / 10) * 10);
-  let v1 = Math.min(100, Math.ceil((Math.max(...values) + 5) / 10) * 10);
+  let v1 = Math.min(ceiling, Math.ceil((Math.max(...values) + 5) / 10) * 10);
   if (v1 - v0 < 20) {
     v1 = Math.min(100, v0 + 20);
     v0 = Math.max(0, v1 - 20);

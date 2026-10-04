@@ -4,6 +4,7 @@
 
 import * as mdi from "@mdi/js";
 import type {
+  CalibrationState,
   ChartPoint,
   PhotoEntry,
   PhotoInfo,
@@ -58,7 +59,7 @@ customElements.define("ha-icon", HaIcon);
 const now = Date.now();
 const iso = (hoursAgo: number) => new Date(now - hoursAgo * 3_600_000).toISOString();
 
-type BasePlant = Omit<Plant, "next_watering" | "thresholds" | "pot" | "species" | "photo"> & {
+type BasePlant = Omit<Plant, "next_watering" | "thresholds" | "pot" | "species" | "photo" | "calibration"> & {
   species: Pick<Species, "scientific" | "common" | "image_url" | "source">;
 };
 
@@ -254,6 +255,7 @@ const plants: Plant[] = base.map((p) => {
     species: { ...p.species, ...extra.species },
     pot: extra.pot,
     photo: null,
+    calibration: null,
     ...(extras[p.id] ?? { next_watering: null, thresholds: null }),
   };
 });
@@ -334,6 +336,7 @@ export function fakeHistory(plantId: string, days: number): HistoryPayload {
     step: step * 3600,
     points,
     thresholds: plant.thresholds,
+    calibration: plant.calibration ? { dry: plant.calibration.dry, wet: plant.calibration.wet } : null,
     forecast:
       next?.method === "trend" && next.earliest && next.latest && new Date(next.due).getTime() > now
         ? { due: next.due, earliest: next.earliest, latest: next.latest, level: last, rate: next.rate ?? 0, confidence: next.confidence ?? "low" }
@@ -462,6 +465,52 @@ void (async () => {
   await addPhoto("p-monstera", await samplePhoto(1), null, 24 * 3);
 })();
 
+// ---- calibration ---------------------------------------------------------------
+
+type Pending = NonNullable<CalibrationState["pending"]>;
+const pendingCalibration = new Map<string, Pending>([
+  // The Calathea: dry saved, watered three hours ago, measuring.
+  [
+    "p-calathea",
+    { phase: "measuring", dry: 19, wet: null, watered_at: iso(3), value: 63.4, hours: 1 },
+  ],
+]);
+const suggestions: Record<string, CalibrationState["suggestion"]> = {
+  "p-monstera": { dry: 55, wet: 77.5, waterings: 2 },
+};
+
+function calibrationState(plant: Plant): CalibrationState {
+  const style = plant.species.watering_style;
+  const scale: [number, number] =
+    style === "dry_out" ? [5, 60] : style === "mostly_dry" ? [15, 80] : style === "evenly_moist" ? [50, 97] : [30, 90];
+  return {
+    calibration: plant.calibration,
+    pending: pendingCalibration.get(plant.id) ?? null,
+    suggestion: suggestions[plant.id] ?? null,
+    current: plant.measurements.soil_moisture?.value ?? null,
+    style,
+    scale,
+  };
+}
+
+function setCalibration(plant: Plant, dry: number, wet: number): void {
+  plant.calibration = { dry, wet, at: new Date().toISOString(), outdated: false };
+  pendingCalibration.delete(plant.id);
+  // Like the backend: thresholds from the watering style on the new scale.
+  const [lowPct, highPct] = calibrationState(plant).scale;
+  const raw = (pct: number) => Math.round((dry + (pct / 100) * (wet - dry)) * 10) / 10;
+  if (plant.thresholds) {
+    plant.thresholds = { ...plant.thresholds, low: raw(lowPct), high: raw(highPct), source: "calibrated" };
+  }
+  const reading = plant.measurements.soil_moisture;
+  if (reading?.value != null) {
+    reading.calibrated = Math.round(Math.min(110, Math.max(0, ((reading.value - dry) / (wet - dry)) * 100)));
+    reading.min = raw(lowPct);
+    reading.max = raw(highPct);
+  }
+  push();
+}
+
 // ---- fake connection ----------------------------------------------------------
 
 const initial = structuredClone(plants);
@@ -513,6 +562,40 @@ async function callWS<T>(message: Record<string, unknown>): Promise<T> {
     }
     push();
     return { entry: logged } as T;
+  }
+  if (String(message.type).startsWith("rootwise/calibration/") && plant) {
+    const step = String(message.type).split("/").at(-1);
+    if (step === "dry") {
+      const current = plant.measurements.soil_moisture?.value ?? null;
+      const before = pendingCalibration.get(plant.id);
+      pendingCalibration.set(plant.id, {
+        phase: before?.wet != null ? "done" : "need_wet",
+        dry: current,
+        wet: before?.wet ?? null,
+        watered_at: null,
+        value: null,
+        hours: 0,
+      });
+      if (before?.wet != null && current != null) setCalibration(plant, current, before.wet);
+    } else if (step === "wet") {
+      const before = pendingCalibration.get(plant.id);
+      pendingCalibration.set(plant.id, {
+        phase: "draining",
+        dry: before?.dry ?? null,
+        wet: null,
+        watered_at: new Date().toISOString(),
+        value: null,
+        hours: 0,
+      });
+    } else if (step === "apply") {
+      setCalibration(plant, Number(message.dry), Number(message.wet));
+    } else if (step === "clear") {
+      plant.calibration = null;
+      pendingCalibration.delete(plant.id);
+      delete plant.measurements.soil_moisture?.calibrated;
+      push();
+    }
+    return calibrationState(plant) as T;
   }
   if (message.type === "rootwise/photos/list") {
     const id = String(message.plant_id);

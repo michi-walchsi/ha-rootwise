@@ -55,10 +55,13 @@ def make(dry: float, wet: float) -> Calibration | None:
     return Calibration(dry, wet) if wet - dry >= MIN_SPAN else None
 
 
-def style_thresholds(calibration: Calibration, style: str) -> tuple[int, int]:
-    """Return raw (low, high) thresholds for a watering style."""
+def style_thresholds(calibration: Calibration, style: str) -> tuple[float, float]:
+    """Return raw (low, high) thresholds for a watering style.
+
+    One decimal: whole numbers would shift a narrow scale's percentages.
+    """
     low, high = STYLE_SCALE.get(style, STYLE_SCALE[DEFAULT_STYLE])
-    return round(calibration.raw(low)), round(calibration.raw(high))
+    return round(calibration.raw(low), 1), round(calibration.raw(high), 1)
 
 
 def suggest(waterings: Sequence[Watering], minimum: int = 2) -> Calibration | None:

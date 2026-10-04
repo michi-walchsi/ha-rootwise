@@ -32,6 +32,7 @@ export function plant(overrides: Partial<Plant> = {}): Plant {
       dli: { min: 6, max: 12 },
     },
     photo: null,
+    calibration: null,
     pot: {
       diameter: 24,
       material: "plastic",

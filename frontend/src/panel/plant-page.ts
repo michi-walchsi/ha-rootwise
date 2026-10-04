@@ -1,6 +1,8 @@
 import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { fetchHistory } from "../api";
+import { calibrateHistory } from "../calibration";
+import { navigate, plantPath } from "../navigate";
 import { RootwiseCardBase } from "../cards/base";
 import { language } from "../i18n";
 import { amountText, potLine, speciesFacts, toxicityInfo, wateringHow } from "../plant-info";
@@ -42,8 +44,8 @@ export class RootwisePlantPage extends RootwiseCardBase {
     super.updated(changed);
     const plant = this.plant;
     if (!plant || !this.hass) return;
-    // Reload after care was logged or deleted, or for another range.
-    const key = [plant.id, this.days, plant.last_watered, plant.recent[0]?.id].join("|");
+    // Reload after care was logged or deleted, a new calibration, or for another range.
+    const key = [plant.id, this.days, plant.last_watered, plant.recent[0]?.id, plant.calibration?.at].join("|");
     if (key === this.historyKey) return;
     if (changed.has("plantId")) this.history = undefined;
     this.historyKey = key;
@@ -82,7 +84,7 @@ export class RootwisePlantPage extends RootwiseCardBase {
         .plant=${plant}
         ?dark=${Boolean(this.hass?.themes?.darkMode)}
       ></rootwise-photo-gallery>
-      ${this.renderPot(plant)} ${this.renderSpecies(plant)}
+      ${this.renderCalibration(plant)} ${this.renderPot(plant)} ${this.renderSpecies(plant)}
     `;
   }
 
@@ -136,7 +138,8 @@ export class RootwisePlantPage extends RootwiseCardBase {
   }
 
   private renderChart(): TemplateResult {
-    const thresholds = this.history?.thresholds;
+    // Same scale as the chart: calibrated percent if the probe is calibrated.
+    const thresholds = this.history ? calibrateHistory(this.history).thresholds : null;
     return html`
       <section class="surface">
         <div class="section-head">
@@ -164,12 +167,33 @@ export class RootwisePlantPage extends RootwiseCardBase {
           ${thresholds
             ? html`<span
                 ><i class="key band"></i>${this.t("chart.target", {
-                  low: thresholds.low,
-                  high: thresholds.high,
+                  low: Math.round(thresholds.low),
+                  high: Math.round(thresholds.high),
                 })}</span
               >`
             : nothing}
         </div>
+      </section>
+    `;
+  }
+
+  private renderCalibration(plant: Plant): TemplateResult | typeof nothing {
+    if (!plant.measurements.soil_moisture || !this.hass?.user?.is_admin) return nothing;
+    const scale = plant.calibration;
+    return html`
+      <section class="surface">
+        <div class="section-head">
+          <h3>${this.t("calibration.section")}</h3>
+          <button class="link" @click=${() => navigate(`${plantPath(plant.id)}/calibrate`)}>
+            ${this.t(scale ? "calibration.open" : "calibration.start")}
+          </button>
+        </div>
+        <p class="muted small">
+          ${scale
+            ? this.t("calibration.section_done", { dry: scale.dry, wet: scale.wet })
+            : this.t("calibration.section_none")}
+        </p>
+        ${scale?.outdated ? html`<p class="warn small">${this.t("calibration.outdated")}</p>` : nothing}
       </section>
     `;
   }
@@ -434,6 +458,16 @@ export class RootwisePlantPage extends RootwiseCardBase {
         font-size: 13px;
         margin: 0;
         line-height: 1.4;
+      }
+      .link {
+        border: 0;
+        background: none;
+        padding: 6px 4px;
+        color: var(--rw-accent);
+        font-weight: 500;
+      }
+      .warn {
+        color: var(--rw-warn);
       }
     `,
   ];

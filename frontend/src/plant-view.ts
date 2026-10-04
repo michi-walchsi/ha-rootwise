@@ -1,5 +1,6 @@
 // Pure helpers behind the plant card: easy to test without a browser.
 
+import { calibrateReason } from "./calibration";
 import { relativeTime } from "./format";
 import { language, localize } from "./i18n";
 import type { HomeAssistant, JournalEntry, MeasurementKey, Plant, Reason } from "./types";
@@ -37,7 +38,10 @@ export function isHint(reason: Reason): boolean {
 
 /** One sentence under the status: why, or how moist the soil is. */
 export function detail(hass: HomeAssistant, plant: Plant): string | null {
-  const reasons = plant.reasons.filter((r) => !isHint(r));
+  const scale = plant.calibration;
+  const reasons = plant.reasons
+    .filter((r) => !isHint(r))
+    .map((r) => (scale ? calibrateReason(r, scale) : r));
   if (plant.status && plant.status !== "ok") {
     const reason = reasons.find((r) => r.code !== "snoozed");
     return reason ? localize(hass, `reason.${reason.code}`, reason) : null;
@@ -133,7 +137,8 @@ const NOTABLE = 3; // points: smaller differences are not worth a hint
 /** Offer learned thresholds when own ones differ, or say they are learned. */
 export function learnedHint(hass: HomeAssistant, plant: Plant): LearnedHint | null {
   const th = plant.thresholds;
-  if (!th?.learned) return null;
+  // Calibrated: the scale and the species' watering style set the thresholds.
+  if (!th?.learned || plant.calibration) return null;
   const [low, high] = th.learned;
   if (th.source === "learned") {
     return {

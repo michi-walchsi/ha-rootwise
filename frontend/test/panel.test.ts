@@ -9,6 +9,10 @@ describe("pageFor", () => {
     expect(pageFor("/somewhere")).toEqual({ kind: "overview" });
   });
 
+  it("opens the calibration assistant of a plant", () => {
+    expect(pageFor("/plant/01J9ABC/calibrate")).toEqual({ kind: "calibrate", id: "01J9ABC" });
+  });
+
   it("opens a plant by its id, also from the link the cards build", () => {
     expect(pageFor("/plant/01J9ABC")).toEqual({ kind: "plant", id: "01J9ABC" });
     const path = plantPath("a b/c").slice("/rootwise".length);

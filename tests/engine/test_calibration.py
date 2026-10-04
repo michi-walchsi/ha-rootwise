@@ -33,7 +33,9 @@ def test_points_too_close_make_no_scale() -> None:
 def test_thresholds_follow_the_watering_style() -> None:
     scale = Calibration(dry=40, wet=80)
     assert style_thresholds(scale, "mostly_dry") == (46, 72)  # 15 % and 80 %
-    assert style_thresholds(scale, "evenly_moist") == (60, 79)  # 50 % and 97 %
+    assert style_thresholds(scale, "evenly_moist") == (60, 78.8)  # 50 % and 97 %
+    # A narrow scale keeps its percentages: 15 % of 55-77.5 is 58.4, not 58.
+    assert style_thresholds(Calibration(55, 77.5), "mostly_dry") == (58.4, 73)
     assert style_thresholds(scale, "") == style_thresholds(scale, "slightly_dry")
 
 

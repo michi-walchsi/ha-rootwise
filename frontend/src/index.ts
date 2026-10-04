@@ -9,6 +9,7 @@ import { RootwiseMoistureChart } from "./components/moisture-chart";
 import { RootwisePhotoCapture } from "./components/photo-capture";
 import { RootwisePhotoGallery } from "./components/photo-gallery";
 import { defineWhenReady } from "./define";
+import { RootwiseCalibrationPage } from "./panel/calibration-page";
 import { RootwisePlantPage } from "./panel/plant-page";
 import { RootwisePanel } from "./panel/rootwise-panel";
 import { localize } from "./i18n";
@@ -35,6 +36,7 @@ void defineWhenReady([
   ["rootwise-overview-card", RootwiseOverviewCard],
   ["rootwise-plant-card", RootwisePlantCard],
   ["rootwise-plant-page", RootwisePlantPage],
+  ["rootwise-calibration-page", RootwiseCalibrationPage],
   ["rootwise-panel", RootwisePanel],
 ]);
 

@@ -92,6 +92,15 @@ describe("chartModel", () => {
     expect(model.band).toBeNull();
   });
 
+  it("makes room for a calibrated peak above field capacity", () => {
+    const points: ChartPoint[] = [
+      [START, 40, 38, 42],
+      [START + 2 * HOUR, 104, 98, 110],
+    ];
+    const model = chartModel(history({ points, thresholds: null }), 400, 200, "de");
+    expect(model.domain.v1).toBe(110);
+  });
+
   it("puts the target band between the thresholds", () => {
     const model = chartModel(history(), 400, 200, "de");
     expect(must(model.band).top).toBeLessThan(must(model.band).bottom);

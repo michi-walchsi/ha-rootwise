@@ -164,3 +164,25 @@ describe("history detail", () => {
     expect(entryDetail(hass, entry)).toBe("");
   });
 });
+
+describe("calibrated plants", () => {
+  const scale = { dry: 31, wet: 71, at: "2026-10-04T15:00:00+00:00", outdated: false };
+
+  it("say why in calibrated percent", () => {
+    const thirsty = plant({
+      status: "thirsty",
+      calibration: scale,
+      reasons: [{ code: "below_threshold", value: 35, threshold: 37 }],
+    });
+    expect(detail(hass, thirsty)).toBe("Bodenfeuchte 10 % unter 15 %");
+  });
+
+  it("offer no learned thresholds: the scale and the species set them", () => {
+    const learned = plant({
+      calibration: scale,
+      thresholds: { low: 60, high: 85, source: "custom", learned: [45, 85], waterings: 3 },
+    });
+    expect(learnedHint(hass, learned)).toBeNull();
+  });
+});
+

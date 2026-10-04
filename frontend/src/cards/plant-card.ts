@@ -1,6 +1,7 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
 import { canDelete, deleteCare, logCare, resetThresholds, snooze } from "../api";
+import { moistureShown } from "../calibration";
 import { formatNumber, relativeTime, scale, shortDateTime } from "../format";
 import { language } from "../i18n";
 import { RootwiseCardBase, editorLabel, errorText } from "./base";
@@ -207,7 +208,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
         ${detailText ? html`<div class="detail">${detailText}</div>` : nothing}
         ${measurements.length
           ? html`<div class="bars">
-              ${measurements.map((key) => this.renderBar(key, plant.measurements[key] as Measurement))}
+              ${measurements.map((key) => this.renderBar(key, this.shown(plant, key), plant))}
             </div>`
           : nothing}
         ${hintTexts.length
@@ -268,7 +269,15 @@ export class RootwisePlantCard extends RootwiseCardBase {
     `;
   }
 
-  private renderBar(key: MeasurementKey, m: Measurement): TemplateResult {
+  /** The reading as shown: soil moisture on the calibrated scale if there is one. */
+  private shown(plant: Plant, key: MeasurementKey): Measurement {
+    const reading = plant.measurements[key] as Measurement;
+    const moisture = key === "soil_moisture" ? moistureShown(plant) : null;
+    if (!moisture?.calibrated) return reading;
+    return { ...reading, value: moisture.value, min: moisture.min, max: moisture.max, unit: "%" };
+  }
+
+  private renderBar(key: MeasurementKey, m: Measurement, plant: Plant): TemplateResult {
     const lang = language(this.hass);
     const s = scale(key, m.value, m.min, m.max);
     const unit = m.unit ?? "";
@@ -290,10 +299,18 @@ export class RootwisePlantCard extends RootwiseCardBase {
         class="bar-row ${off ? "off" : ""}"
         role="button"
         tabindex="0"
-        @click=${() => this.moreInfo(this.plant?.entity_ids[key])}
+        @click=${() => this.moreInfo(plant.entity_ids[key])}
       >
         <ha-icon icon=${ICONS[key] ?? "mdi:gauge"}></ha-icon>
-        <span class="label">${label}</span>
+        <span class="label"
+          >${label}${key === "soil_moisture" && plant.calibration && plant.measurements.soil_moisture?.value != null
+            ? html`<small class="raw muted"
+                >${this.t("calibration.raw_line", {
+                  value: formatNumber(key, plant.measurements.soil_moisture.value, lang),
+                })}</small
+              >`
+            : nothing}</span
+        >
         <div class="bar" role="img" aria-label=${aria}>
           <div class="zone" style="left:${s.low}%;width:${Math.max(s.high - s.low, 0)}%"></div>
           ${key === "soil_moisture" && s.marker !== null
@@ -484,6 +501,11 @@ export class RootwisePlantCard extends RootwiseCardBase {
   static override styles = [
     theme,
     css`
+      .raw {
+        display: block;
+        font-size: 11px;
+        line-height: 1.2;
+      }
       ha-card {
         padding: 14px 16px;
         display: flex;

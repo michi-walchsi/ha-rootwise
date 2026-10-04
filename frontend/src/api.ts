@@ -1,4 +1,5 @@
 import type {
+  CalibrationState,
   HassConnection,
   HistoryPayload,
   HomeAssistant,
@@ -97,3 +98,20 @@ export function fetchHistory(
 ): Promise<HistoryPayload> {
   return hass.callWS<HistoryPayload>({ type: "rootwise/plant/history", plant_id: plantId, days });
 }
+
+export type CalibrationStep = "get" | "dry" | "wet" | "clear";
+
+/** One step of the calibration assistant; every step answers with its state. */
+export function calibrate(hass: HomeAssistant, plantId: string, step: CalibrationStep): Promise<CalibrationState> {
+  return hass.callWS<CalibrationState>({ type: `rootwise/calibration/${step}`, plant_id: plantId });
+}
+
+export function applyCalibration(
+  hass: HomeAssistant,
+  plantId: string,
+  dry: number,
+  wet: number,
+): Promise<CalibrationState> {
+  return hass.callWS<CalibrationState>({ type: "rootwise/calibration/apply", plant_id: plantId, dry, wet });
+}
+
