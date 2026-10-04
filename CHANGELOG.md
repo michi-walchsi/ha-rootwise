@@ -4,6 +4,8 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen 
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-04 (Panel, Fotos, Kalibrierung)
+
 ### Neu
 - **Panel „Pflanzen“** in der Seitenleiste:
   - Übersicht mit „Heute gießen“, Kacheln mit Titelbild und Filter nach Raum.
