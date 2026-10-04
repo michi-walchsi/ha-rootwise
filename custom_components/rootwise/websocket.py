@@ -35,14 +35,17 @@ from .const import (
     SIGNAL_UPDATE,
     SOURCE_AUTO,
 )
+from .engine.amount import watering_amount
 from .engine.chart import resample, step_for
 from .engine.measure import round_value
-from .hub import FutureTimeError
+from .hub import FutureTimeError, species_range
 
 if TYPE_CHECKING:
     from .hub import PlantRuntime, RootwiseHub
 
 RECENT = 5
+# Climate values whose species range the plant page shows, with or without sensor.
+CARE_RANGES = ("temperature", "air_humidity", "illuminance")
 # Journal entries the chart marks.
 CHART_EVENTS = (CARE_WATERED, CARE_FERTILIZED, CARE_SENSOR_MOVED)
 
@@ -100,12 +103,43 @@ def _species(hass: HomeAssistant, plant: PlantRuntime) -> dict[str, Any]:
     common = info.get("common")
     if not common and species is not None:
         common = species.common.get(hass.config.language[:2]) or species.common["en"]
+    ranges = {}
+    for key in CARE_RANGES:
+        target, _ = species_range(key, plant.config.species_info, species)
+        if target is not None:
+            ranges[key] = {"min": target.min, "max": target.max}
     return {
         "scientific": info.get("scientific")
         or (species.scientific if species else None),
         "common": common,
         "image_url": plant.image_url,
         "source": info.get("source") or ("offline" if species else None),
+        "watering_style": species.watering_style if species else None,
+        "fertilize_weeks": species.fertilize_weeks if species else None,
+        "toxicity": {
+            **species.toxicity,
+            "note": species.toxicity_note,
+            "source": species.toxicity_source,
+        }
+        if species
+        else None,
+        "ranges": ranges,
+        # Daily light integral the species wants, mol/m² per day.
+        "dli": {"min": species.dli_min, "max": species.dli_max} if species else None,
+    }
+
+
+def _pot(plant: PlantRuntime) -> dict[str, Any]:
+    config = plant.config
+    style = plant.species.watering_style if plant.species else ""
+    amount = watering_amount(config.pot_diameter, style)
+    return {
+        "diameter": config.pot_diameter,
+        "material": config.pot_material,
+        "drainage": config.drainage,
+        "window": config.window,
+        "location": config.location,
+        "amount": list(amount) if amount else None,
     }
 
 
@@ -150,6 +184,7 @@ def _plant(
         "snoozed_until": snoozed.isoformat() if snoozed else None,
         "last_watered": watered.isoformat() if watered else None,
         "species": _species(hass, plant),
+        "pot": _pot(plant),
         "measurements": _measurements(plant),
         "next_watering": _next_watering(plant),
         "thresholds": _thresholds(plant),

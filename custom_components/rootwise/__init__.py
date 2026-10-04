@@ -14,7 +14,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .config_flow import async_get_species_db
 from .const import DOMAIN
-from .frontend import async_register_cards
+from .frontend import async_register_cards, async_register_panel, async_remove_panel
 from .hub import RootwiseHub
 from .repairs import async_check_sources
 from .services import async_setup_services
@@ -57,6 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) -> 
         plant.async_evaluate()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     hub.async_start()
+    await async_register_panel(hass)
     # Plant added, changed or removed (or options changed): rebuild everything.
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True
@@ -71,7 +72,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) ->
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: RootwiseConfigEntry) -> None:
-    """Drop open repair issues together with the entry."""
+    """Drop the panel and open repair issues together with the entry."""
+    async_remove_panel(hass)
     for domain, issue_id in list(ir.async_get(hass).issues):
         if domain == DOMAIN:
             ir.async_delete_issue(hass, DOMAIN, issue_id)

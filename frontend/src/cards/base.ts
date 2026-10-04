@@ -2,7 +2,8 @@ import { LitElement, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { subscribePlants } from "../api";
 import { localize } from "../i18n";
-import type { HassConnection, HomeAssistant, PlantsPayload } from "../types";
+import { navigate, plantPath } from "../navigate";
+import type { HassConnection, HomeAssistant, Plant, PlantsPayload } from "../types";
 
 /** Shared plumbing: the plant subscription, texts, theme and more-info. */
 export class RootwiseCardBase extends LitElement {
@@ -43,6 +44,11 @@ export class RootwiseCardBase extends LitElement {
 
   protected t(key: string, vars?: Record<string, unknown>): string {
     return localize(this.hass, key, vars);
+  }
+
+  /** Open the plant's page in the Plants panel. */
+  protected openPlant(plant: Plant): void {
+    navigate(plantPath(plant.id));
   }
 
   protected moreInfo(entityId: string | undefined): void {

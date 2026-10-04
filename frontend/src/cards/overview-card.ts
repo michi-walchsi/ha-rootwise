@@ -3,6 +3,7 @@ import { state } from "lit/decorators.js";
 import { deleteCare, logCare } from "../api";
 import { language } from "../i18n";
 import { bySeverity, checklist, dueLine, duePlants, inArea, summary, tile } from "../overview-view";
+import { amountText } from "../plant-info";
 import { theme } from "../theme";
 import type { JournalEntry, LovelaceCardConfig, Plant } from "../types";
 import { RootwiseCardBase, editorLabel, errorText } from "./base";
@@ -173,6 +174,7 @@ export class RootwiseOverviewCard extends RootwiseCardBase {
   private renderRow(plant: Plant): TemplateResult {
     const hass = this.hass;
     const entry = this.ticked.get(plant.id);
+    const amount = hass ? amountText(hass, plant.pot.amount) : null;
     const line = entry
       ? this.t("overview.logged_at", {
           time: new Intl.DateTimeFormat(language(hass), { hour: "2-digit", minute: "2-digit" }).format(
@@ -193,9 +195,18 @@ export class RootwiseOverviewCard extends RootwiseCardBase {
         >
           <ha-icon icon="mdi:check"></ha-icon>
         </button>
-        <div class="row-text" role="button" tabindex="0" @click=${() => this.moreInfo(plant.entity_ids.status)}>
+        <div
+          class="row-text"
+          role="button"
+          tabindex="0"
+          @click=${() => this.openPlant(plant)}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === "Enter" || e.key === " ") this.openPlant(plant);
+          }}
+        >
           <span class="name">${plant.name}</span>
           <span class="muted small">${line}</span>
+          ${!entry && amount ? html`<span class="muted small">${amount}</span>` : nothing}
         </div>
       </li>
     `;
@@ -204,7 +215,7 @@ export class RootwiseOverviewCard extends RootwiseCardBase {
   private renderTile(plant: Plant): TemplateResult {
     const info = this.hass ? tile(this.hass, plant, new Date()) : { color: "", text: "" };
     return html`
-      <button class="tile" @click=${() => this.moreInfo(plant.entity_ids.status)}>
+      <button class="tile" @click=${() => this.openPlant(plant)}>
         <span class="tile-name"><span class="dot" style="background:${info.color}"></span>${plant.name}</span>
         <span class="muted tiny">${info.text}</span>
       </button>

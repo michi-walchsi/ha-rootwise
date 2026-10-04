@@ -1,7 +1,7 @@
 {
   "domain": "rootwise",
   "name": "Rootwise",
-  "after_dependencies": ["frontend", "http", "recorder"],
+  "after_dependencies": ["frontend", "http", "panel_custom", "recorder"],
   "codeowners": ["@michi-walchsi"],
   "config_flow": true,
   "dependencies": [],

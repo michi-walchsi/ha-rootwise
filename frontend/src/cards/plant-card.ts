@@ -30,6 +30,8 @@ import type {
 
 interface PlantCardConfig extends LovelaceCardConfig, PlantRef {
   show_history?: boolean;
+  /** Inside the plant page, which shows name and picture itself. */
+  embedded?: boolean;
 }
 
 interface Toast {
@@ -201,7 +203,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
         ${this.payload.vacation
           ? html`<div class="banner"><ha-icon icon="mdi:airplane"></ha-icon>${this.t("vacation")}</div>`
           : nothing}
-        ${this.renderHead(plant)}
+        ${this.config?.embedded ? nothing : this.renderHead(plant)}
         ${detailText ? html`<div class="detail">${detailText}</div>` : nothing}
         ${measurements.length
           ? html`<div class="bars">
@@ -236,9 +238,9 @@ export class RootwisePlantCard extends RootwiseCardBase {
         class="head"
         role="button"
         tabindex="0"
-        @click=${() => this.moreInfo(plant.entity_ids.status)}
+        @click=${() => this.openPlant(plant)}
         @keydown=${(e: KeyboardEvent) => {
-          if (e.key === "Enter" || e.key === " ") this.moreInfo(plant.entity_ids.status);
+          if (e.key === "Enter" || e.key === " ") this.openPlant(plant);
         }}
       >
         <div class="avatar">

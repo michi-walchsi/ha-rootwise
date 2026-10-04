@@ -109,6 +109,33 @@ async def test_future_time_is_rejected(
     assert response["error"]["code"] == "when_in_future"
 
 
+async def test_plants_bring_pot_and_species_care(
+    hass: HomeAssistant, entry: MockConfigEntry, client
+) -> None:
+    result = await client.result("rootwise/plants")
+    monstera = _plant(result, "Monstera")
+    assert monstera["pot"] == {
+        "diameter": 24,
+        "material": "plastic",
+        "drainage": True,
+        "window": "w",
+        "location": "indoor",
+        "amount": [1500, 1900],
+    }
+    species = monstera["species"]
+    assert species["watering_style"] == "mostly_dry"
+    assert species["fertilize_weeks"] == 3
+    assert species["toxicity"]["cats"] == "mild"
+    assert species["toxicity"]["note"] == "calcium_oxalate"
+    assert species["toxicity"]["source"].startswith("https://www.aspca.org/")
+    assert species["ranges"]["temperature"] == {"min": 18, "max": 27}
+    assert species["ranges"]["air_humidity"] == {"min": 50, "max": None}
+    assert species["dli"] == {"min": 6, "max": 12}
+
+    low, high = _plant(result, "Efeutute")["pot"]["amount"]
+    assert 0 < low < high
+
+
 async def test_unknown_plant(
     hass: HomeAssistant, entry: MockConfigEntry, client
 ) -> None:

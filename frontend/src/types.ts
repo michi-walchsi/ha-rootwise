@@ -59,6 +59,45 @@ export interface Reason {
   [key: string]: unknown;
 }
 
+export type Toxicity = "unknown" | "none" | "mild" | "moderate" | "severe";
+export type WateringStyle = "dry_out" | "mostly_dry" | "slightly_dry" | "evenly_moist";
+
+export interface Range {
+  min: number | null;
+  max: number | null;
+}
+
+export interface Species {
+  scientific: string | null;
+  common: string | null;
+  image_url: string | null;
+  source: string | null;
+  watering_style: WateringStyle | null;
+  fertilize_weeks: number | null;
+  toxicity: {
+    cats: Toxicity;
+    dogs: Toxicity;
+    humans: Toxicity;
+    /** Code of the toxic substance, e.g. "calcium_oxalate". */
+    note: string;
+    /** URL or name of the source. */
+    source: string;
+  } | null;
+  ranges: Partial<Record<"temperature" | "air_humidity" | "illuminance", Range>>;
+  /** Daily light integral, mol/m² per day. */
+  dli: { min: number; max: number } | null;
+}
+
+export interface Pot {
+  diameter: number;
+  material: string;
+  drainage: boolean;
+  window: string;
+  location: string;
+  /** ml per watering, from and to. */
+  amount: [number, number] | null;
+}
+
 export interface Plant {
   id: string;
   name: string;
@@ -72,12 +111,8 @@ export interface Plant {
   reasons: Reason[];
   snoozed_until: string | null;
   last_watered: string | null;
-  species: {
-    scientific: string | null;
-    common: string | null;
-    image_url: string | null;
-    source: string | null;
-  };
+  species: Species;
+  pot: Pot;
   measurements: Partial<Record<MeasurementKey, Measurement>>;
   next_watering: NextWatering | null;
   thresholds: Thresholds | null;
