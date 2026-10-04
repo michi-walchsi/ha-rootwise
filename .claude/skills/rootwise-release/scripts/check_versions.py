@@ -65,6 +65,9 @@ def notes(version: str) -> int:
     if not match:
         print(f"no section for {version}", file=sys.stderr)
         return 1
+    # The notes are redirected into a file for gh. On Windows that file would
+    # get the ANSI code page, and GitHub shows „quotes“ and dashes as �.
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")  # type: ignore[union-attr]
     print(match.group(1).strip())
     return 0
 
