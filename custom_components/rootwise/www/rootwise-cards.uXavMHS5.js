@@ -471,7 +471,7 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
         <button role="menuitem" @click=${this.openWhen}>
           <ha-icon icon="mdi:clock-edit-outline"></ha-icon>${this.t(`more.other_time`)}
         </button>
-        ${[`fertilized`,`sensor_moved`].map(e=>T`<button role="menuitem" @click=${()=>void this.log(e)}>
+        ${[`fertilized`,`repotted`,`sensor_moved`].map(e=>T`<button role="menuitem" @click=${()=>void this.log(e)}>
             <ha-icon icon=${Yt[e]??`mdi:plus`}></ha-icon>${this.t(`care.${e}`)}
           </button>`)}
       </div>

@@ -4,6 +4,33 @@ Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen 
 
 ## [Unreleased]
 
+### Neu
+- **Panel „Pflanzen“** in der Seitenleiste:
+  - Übersicht mit „Heute gießen“, Kacheln mit Titelbild und Filter nach Raum.
+  - Eine Seite pro Pflanze mit allen Werten und dem **Feuchteverlauf** über 14 oder 30 Tage: Zielband, Gieß-Marker, Prognose mit Zeitfenster, Werte beim Antippen.
+  - Dazu Fotos, Kalibrierung, der Topf mit **Gießmenge** (etwa „ca. 350–600 ml“) und Artinfos: Gießweise, Licht, Düngen, Giftigkeit für Katzen, Hunde und Kinder.
+- **Pflanze hinzufügen im Panel** (Admins) in sechs Schritten:
+  - Foto, Art (OpenPlantbook oder Offline-Liste), Name und Raum.
+  - Sensoren mit aktuellen Werten, vorgeschlagen nach Raum und Messart, freie Geräte zuerst.
+  - Topf, dann fertig: Rootwise liest sofort die letzten 60 Tage des Bodensensors.
+- **Fotos** pro Pflanze:
+  - Aufnahme mit Live-Kamera (nur über HTTPS) oder aus der Galerie.
+  - Höchstens 1600 px, ohne Standort- und Kameradaten, gespeichert unter `/media/rootwise/` und nur für angemeldete Benutzer abrufbar.
+  - Fotoverlauf mit Vollbild, Titelbild wählen, löschen. Fotos gelöschter Pflanzen kommen ins Archiv.
+  - Neue Bild-Entität **Foto** pro Pflanze und Aktion `rootwise.upload_photo` (Datei oder Kamera-Schnappschuss).
+- **Kalibrier-Assistent** (Admins):
+  - „Erde ist jetzt richtig trocken“ ergibt 0 %. Nach dem durchdringenden Gießen misst Rootwise 2–6 Stunden danach die Feldkapazität als 100 %.
+  - Alternativ übernimmst du den Vorschlag aus deinen Gießrunden.
+  - Die Schwellen folgen dann dem Gießstil der Art. Karten und Panel zeigen kalibrierte Prozent und den Rohwert darunter.
+  - Nach „Sensor umgesteckt“ oder „Umgetopft“ empfiehlt Rootwise, neu zu kalibrieren.
+- **Pflanzen-Karte:** kleiner 14-Tage-Chart (im Editor abschaltbar), Knopf **Foto** und dein Titelbild statt des Artbilds. Tippen auf den Namen öffnet die Pflanzenseite. Im Menü neu: **Umgetopft**.
+- **Übersichts-Karte:** Kacheln mit Titelbild und Status als Ring; Gießmenge bei „Heute gießen“; Tippen öffnet die Pflanzenseite.
+- Anleitung im README: Google Gemini für den Foto-Check in v0.5 vorbereiten.
+
+### Geändert
+- Schwellen gelten in dieser Reihenfolge: eigene, kalibrierte, gelernte, Artwerte.
+- In schmalen Spalten bleiben alle Knöpfe der Pflanzen-Karte sichtbar, und die Balken bekommen eine eigene Zeile.
+
 ## [0.3.1] - 2026-10-04
 
 ### Behoben

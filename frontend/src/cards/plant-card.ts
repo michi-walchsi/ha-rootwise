@@ -480,7 +480,7 @@ export class RootwisePlantCard extends RootwiseCardBase {
         <button role="menuitem" @click=${this.openWhen}>
           <ha-icon icon="mdi:clock-edit-outline"></ha-icon>${this.t("more.other_time")}
         </button>
-        ${["fertilized", "sensor_moved"].map(
+        ${["fertilized", "repotted", "sensor_moved"].map(
           (type) => html`<button role="menuitem" @click=${() => void this.log(type)}>
             <ha-icon icon=${ICONS[type] ?? "mdi:plus"}></ha-icon>${this.t(`care.${type}`)}
           </button>`,
